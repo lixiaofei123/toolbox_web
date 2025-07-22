@@ -42,9 +42,17 @@ export default function ImageEditor() {
   const [customHeight, setCustomHeight] = useState<string>("")
   const [isDragging, setIsDragging] = useState(false)
   const [dragHandle, setDragHandle] = useState<ResizeHandle>(null)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0, cropX: 0, cropY: 0, cropWidth: 0, cropHeight: 0 })
+  const [dragStart, setDragStart] = useState({
+    mouseX: 0,
+    mouseY: 0,
+    cropX: 0,
+    cropY: 0,
+    cropWidth: 0,
+    cropHeight: 0,
+  })
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 })
+  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
   const [error, setError] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -151,16 +159,25 @@ export default function ImageEditor() {
     }
   }
 
+  // 修复后的鼠标位置计算函数
   const getMousePosition = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageRef.current) return { x: 0, y: 0 }
+    if (!containerRef.current || !imageRef.current) return { x: 0, y: 0 }
 
-    const rect = imageRef.current.getBoundingClientRect()
-    const scaleX = imageSize.width / rect.width
-    const scaleY = imageSize.height / rect.height
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const imageRect = imageRef.current.getBoundingClientRect()
 
+    // 计算鼠标相对于图片的位置
+    const mouseX = e.clientX - imageRect.left
+    const mouseY = e.clientY - imageRect.top
+
+    // 计算缩放比例
+    const scaleX = imageSize.width / imageRect.width
+    const scaleY = imageSize.height / imageRect.height
+
+    // 转换为原始图片坐标
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: mouseX * scaleX,
+      y: mouseY * scaleY,
     }
   }
 
@@ -181,8 +198,8 @@ export default function ImageEditor() {
     setIsDragging(true)
     setDragHandle(handle)
     setDragStart({
-      x: mousePos.x,
-      y: mousePos.y,
+      mouseX: mousePos.x,
+      mouseY: mousePos.y,
       cropX: cropArea.x,
       cropY: cropArea.y,
       cropWidth: cropArea.width,
@@ -194,8 +211,8 @@ export default function ImageEditor() {
     if (!isDragging || !dragHandle) return
 
     const mousePos = getMousePosition(e)
-    const deltaX = mousePos.x - dragStart.x
-    const deltaY = mousePos.y - dragStart.y
+    const deltaX = mousePos.x - dragStart.mouseX
+    const deltaY = mousePos.y - dragStart.mouseY
 
     let newArea = { ...cropArea }
 
@@ -365,6 +382,40 @@ export default function ImageEditor() {
     }
   }
 
+  // 计算裁剪框在显示图片上的位置和大小
+  const getCropBoxStyle = () => {
+    if (!imageRef.current || cropArea.width === 0 || cropArea.height === 0) {
+      return { display: "none" }
+    }
+
+    const imageRect = imageRef.current.getBoundingClientRect()
+    const containerRect = containerRef.current?.getBoundingClientRect()
+
+    if (!containerRect) return { display: "none" }
+
+    // 计算缩放比例
+    const scaleX = imageRect.width / imageSize.width
+    const scaleY = imageRect.height / imageSize.height
+
+    // 计算裁剪框在显示图片上的位置和大小
+    const displayCropX = cropArea.x * scaleX
+    const displayCropY = cropArea.y * scaleY
+    const displayCropWidth = cropArea.width * scaleX
+    const displayCropHeight = cropArea.height * scaleY
+
+    // 计算相对于容器的位置
+    const left = imageRect.left - containerRect.left + displayCropX
+    const top = imageRect.top - containerRect.top + displayCropY
+
+    return {
+      position: "absolute" as const,
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${displayCropWidth}px`,
+      height: `${displayCropHeight}px`,
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100">
       {/* Header */}
@@ -519,6 +570,7 @@ export default function ImageEditor() {
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
                       onMouseLeave={handleMouseUp}
+                      style={{ minHeight: "400px" }}
                     >
                       <img
                         ref={imageRef}
@@ -528,55 +580,52 @@ export default function ImageEditor() {
                         style={{ maxWidth: "600px", maxHeight: "400px" }}
                         draggable={false}
                       />
-                      {cropArea.width > 0 && cropArea.height > 0 && imageRef.current && (
+
+                      {/* 裁剪框覆盖层 */}
+                      {cropArea.width > 0 && cropArea.height > 0 && (
                         <div
-                          className="absolute border-2 border-blue-500 bg-blue-500/10"
-                          style={{
-                            left: `${(cropArea.x / imageSize.width) * 100}%`,
-                            top: `${(cropArea.y / imageSize.height) * 100}%`,
-                            width: `${(cropArea.width / imageSize.width) * 100}%`,
-                            height: `${(cropArea.height / imageSize.height) * 100}%`,
-                          }}
+                          className="border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
+                          style={getCropBoxStyle()}
                         >
                           {/* 移动手柄 */}
                           <div
-                            className="absolute inset-0 cursor-move"
+                            className="absolute inset-0 cursor-move pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "move")}
                           />
 
                           {/* 角落调整手柄 */}
                           <div
-                            className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white cursor-nw-resize"
+                            className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white cursor-nw-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "nw")}
                           />
                           <div
-                            className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-ne-resize"
+                            className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-ne-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "ne")}
                           />
                           <div
-                            className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white cursor-sw-resize"
+                            className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white cursor-sw-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "sw")}
                           />
                           <div
-                            className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-se-resize"
+                            className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white cursor-se-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "se")}
                           />
 
                           {/* 边缘调整手柄 */}
                           <div
-                            className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-500 border border-white cursor-n-resize"
+                            className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-500 border border-white cursor-n-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "n")}
                           />
                           <div
-                            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-500 border border-white cursor-s-resize"
+                            className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-blue-500 border border-white cursor-s-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "s")}
                           />
                           <div
-                            className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 border border-white cursor-w-resize"
+                            className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 border border-white cursor-w-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "w")}
                           />
                           <div
-                            className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 border border-white cursor-e-resize"
+                            className="absolute -right-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-blue-500 border border-white cursor-e-resize pointer-events-auto"
                             onMouseDown={(e) => handleMouseDown(e, "e")}
                           />
                         </div>
