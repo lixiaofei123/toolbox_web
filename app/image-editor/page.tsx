@@ -324,20 +324,35 @@ export default function ImageEditor() {
     const newWidth = Number.parseInt(customWidth)
     const newHeight = Number.parseInt(customHeight)
 
+    if (newWidth <= 0 || newHeight <= 0) {
+      setError("宽度和高度必须大于0")
+      return
+    }
+
     img.onload = () => {
       canvas.width = newWidth
       canvas.height = newHeight
 
       if (ctx) {
+        // 清空画布
+        ctx.clearRect(0, 0, newWidth, newHeight)
+
+        // 绘制调整后的图片
         ctx.drawImage(img, 0, 0, newWidth, newHeight)
+
         const resizedDataUrl = canvas.toDataURL("image/png")
         setCroppedImage(resizedDataUrl)
+        setError("")
 
         toast({
           title: "调整成功",
           description: `图片尺寸已调整为 ${newWidth}x${newHeight}`,
         })
       }
+    }
+
+    img.onerror = () => {
+      setError("图片加载失败")
     }
 
     img.src = originalImage
@@ -495,33 +510,42 @@ export default function ImageEditor() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>自定义尺寸</Label>
+                  <Label>自定义尺寸调整</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label htmlFor="custom-width" className="text-xs">
-                        宽度
+                        宽度 (px)
                       </Label>
                       <Input
                         id="custom-width"
                         type="number"
-                        placeholder="宽度"
+                        placeholder="如: 800"
                         value={customWidth}
                         onChange={(e) => setCustomWidth(e.target.value)}
+                        min="1"
+                        max="5000"
                       />
                     </div>
                     <div>
                       <Label htmlFor="custom-height" className="text-xs">
-                        高度
+                        高度 (px)
                       </Label>
                       <Input
                         id="custom-height"
                         type="number"
-                        placeholder="高度"
+                        placeholder="如: 600"
                         value={customHeight}
                         onChange={(e) => setCustomHeight(e.target.value)}
+                        min="1"
+                        max="5000"
                       />
                     </div>
                   </div>
+                  {originalImage && (
+                    <div className="text-xs text-gray-500">
+                      原始尺寸: {imageSize.width} × {imageSize.height}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -529,9 +553,13 @@ export default function ImageEditor() {
                     <Crop className="w-4 h-4 mr-2" />
                     剪裁
                   </Button>
-                  <Button onClick={resizeImage} disabled={!originalImage} variant="outline">
+                  <Button
+                    onClick={resizeImage}
+                    disabled={!originalImage || !customWidth || !customHeight}
+                    variant="outline"
+                  >
                     <Square className="w-4 h-4 mr-2" />
-                    调整
+                    调整尺寸
                   </Button>
                 </div>
 

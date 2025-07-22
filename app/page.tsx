@@ -16,6 +16,7 @@ import {
   Shield,
   Clock,
   Key,
+  Timer,
 } from "lucide-react"
 
 const tools = [
@@ -58,6 +59,14 @@ const tools = [
     icon: Key,
     href: "/jwt-parser",
     color: "bg-amber-500",
+  },
+  {
+    id: "cron-generator",
+    title: "Cron 表达式",
+    description: "生成和分析Cron定时任务表达式",
+    icon: Timer,
+    href: "/cron-generator",
+    color: "bg-violet-500",
   },
   {
     id: "json-formatter",
