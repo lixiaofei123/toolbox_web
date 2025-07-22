@@ -8,9 +8,10 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "在线工具箱 - 开发者实用工具集合",
-  description: "提供Base64转换、图片处理、二维码生成识别、JWT解析、正则表达式测试、文本对比等实用开发工具",
-  keywords: "在线工具,Base64转换,图片转换,二维码,JWT,正则表达式,开发工具",
+  title: "在线工具箱 - 开发者实用工具集合 | AI Generated",
+  description:
+    "提供Base64转换、图片处理、二维码工具、JWT解析、正则表达式测试等实用在线工具。完全由AI生成，本地运行，保护隐私。",
+  keywords: "在线工具,Base64转换,图片处理,二维码,JWT,正则表达式,开发者工具,AI生成",
     generator: 'v0.dev'
 }
 
