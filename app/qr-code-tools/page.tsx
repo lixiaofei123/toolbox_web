@@ -27,9 +27,11 @@ import {
   CheckCircle,
   Scan,
   FileImage,
+  Camera,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import QRCode from "qrcode"
+import jsQR from "jsqr"
 
 export default function QrCodeTools() {
   // 生成二维码相关状态
@@ -44,6 +46,7 @@ export default function QrCodeTools() {
   const [uploadedImage, setUploadedImage] = useState("")
   const [recognizedText, setRecognizedText] = useState("")
   const [isRecognizing, setIsRecognizing] = useState(false)
+  const [qrCodeInfo, setQrCodeInfo] = useState<any>(null)
 
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
@@ -70,7 +73,7 @@ export default function QrCodeTools() {
           dark: qrColor,
           light: bgColor,
         },
-        errorCorrectionLevel: "M",
+        errorCorrectionLevel: "M" as const,
       }
 
       await QRCode.toCanvas(canvas, qrText, options)
@@ -103,12 +106,13 @@ export default function QrCodeTools() {
       const result = e.target?.result as string
       setUploadedImage(result)
       setRecognizedText("")
+      setQrCodeInfo(null)
       setError("")
     }
     reader.readAsDataURL(file)
   }
 
-  // 模拟二维码识别
+  // 使用 jsQR 库进行真实的二维码识别
   const recognizeQR = async () => {
     if (!uploadedImage) {
       setError("请先上传包含二维码的图片")
@@ -119,33 +123,91 @@ export default function QrCodeTools() {
     setError("")
 
     try {
-      // 模拟识别过程
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // 创建图片对象
+      const img = new Image()
+      img.crossOrigin = "anonymous"
 
-      // 模拟识别结果
-      const mockResults = [
-        "https://example.com",
-        "这是一个测试二维码内容",
-        "Hello, World!",
-        "联系方式：张三 13800138000",
-        "WIFI:T:WPA;S:MyNetwork;P:password123;;",
-        "mailto:example@email.com",
-        "tel:+1234567890",
-        "BEGIN:VCARD\nVERSION:3.0\nFN:张三\nORG:示例公司\nTEL:+86-138-0013-8000\nEMAIL:zhangsan@example.com\nEND:VCARD",
-      ]
-
-      const randomResult = mockResults[Math.floor(Math.random() * mockResults.length)]
-      setRecognizedText(randomResult)
-
-      toast({
-        title: "识别成功",
-        description: "已成功识别二维码内容",
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve()
+        img.onerror = () => reject(new Error("图片加载失败"))
+        img.src = uploadedImage
       })
+
+      // 创建 canvas 进行图像处理
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) throw new Error("无法获取 Canvas 上下文")
+
+      canvas.width = img.width
+      canvas.height = img.height
+      ctx.drawImage(img, 0, 0)
+
+      // 获取图像数据
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+
+      // 使用 jsQR 库识别二维码
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: "dontInvert",
+      })
+
+      if (code) {
+        setRecognizedText(code.data)
+        setQrCodeInfo({
+          data: code.data,
+          location: code.location,
+          version: code.version,
+          errorCorrectionLevel: code.errorCorrectionLevel,
+          dataMask: code.dataMask,
+          chunks: code.chunks,
+        })
+
+        toast({
+          title: "识别成功",
+          description: "已成功识别二维码内容",
+        })
+      } else {
+        // 尝试反色处理
+        const invertedImageData = invertImageData(imageData)
+        const invertedCode = jsQR(invertedImageData.data, invertedImageData.width, invertedImageData.height, {
+          inversionAttempts: "attemptBoth",
+        })
+
+        if (invertedCode) {
+          setRecognizedText(invertedCode.data)
+          setQrCodeInfo({
+            data: invertedCode.data,
+            location: invertedCode.location,
+            version: invertedCode.version,
+            errorCorrectionLevel: invertedCode.errorCorrectionLevel,
+            dataMask: invertedCode.dataMask,
+            chunks: invertedCode.chunks,
+          })
+
+          toast({
+            title: "识别成功",
+            description: "已成功识别二维码内容（反色处理）",
+          })
+        } else {
+          throw new Error("未能识别出二维码内容")
+        }
+      }
     } catch (err) {
-      setError("二维码识别失败，请确保图片清晰且包含有效的二维码")
+      setError("二维码识别失败：" + (err instanceof Error ? err.message : "请确保图片清晰且包含有效的二维码"))
     } finally {
       setIsRecognizing(false)
     }
+  }
+
+  // 反色处理图像数据
+  const invertImageData = (imageData: ImageData): ImageData => {
+    const data = new Uint8ClampedArray(imageData.data)
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 255 - data[i] // R
+      data[i + 1] = 255 - data[i + 1] // G
+      data[i + 2] = 255 - data[i + 2] // B
+      // Alpha 通道保持不变
+    }
+    return new ImageData(data, imageData.width, imageData.height)
   }
 
   const downloadQR = () => {
@@ -187,17 +249,17 @@ export default function QrCodeTools() {
         setQrText("mailto:example@email.com")
         break
       case "phone":
-        setQrText("tel:+1234567890")
+        setQrText("tel:+86-138-0013-8000")
         break
       case "sms":
-        setQrText("sms:+1234567890")
+        setQrText("sms:+86-138-0013-8000")
         break
       case "wifi":
         setQrText("WIFI:T:WPA;S:NetworkName;P:Password;;")
         break
       case "vcard":
         setQrText(
-          "BEGIN:VCARD\nVERSION:3.0\nFN:张三\nORG:公司名称\nTEL:+1234567890\nEMAIL:zhangsan@example.com\nEND:VCARD",
+          "BEGIN:VCARD\nVERSION:3.0\nFN:张三\nORG:公司名称\nTEL:+86-138-0013-8000\nEMAIL:zhangsan@example.com\nEND:VCARD",
         )
         break
       default:
@@ -210,11 +272,24 @@ export default function QrCodeTools() {
     setQrDataUrl("")
     setUploadedImage("")
     setRecognizedText("")
+    setQrCodeInfo(null)
     setError("")
     setQrType("text")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
+  }
+
+  const getContentType = (text: string) => {
+    if (text.startsWith("http://") || text.startsWith("https://")) return "网址链接"
+    if (text.startsWith("mailto:")) return "电子邮件"
+    if (text.startsWith("tel:")) return "电话号码"
+    if (text.startsWith("sms:")) return "短信"
+    if (text.startsWith("WIFI:")) return "WiFi信息"
+    if (text.startsWith("BEGIN:VCARD")) return "联系人名片"
+    if (text.startsWith("geo:")) return "地理位置"
+    if (text.startsWith("market://") || text.startsWith("https://play.google.com")) return "应用下载"
+    return "纯文本"
   }
 
   return (
@@ -489,7 +564,7 @@ export default function QrCodeTools() {
                       <Upload className="w-5 h-5" />
                       上传二维码图片
                     </CardTitle>
-                    <CardDescription>选择包含二维码的图片文件</CardDescription>
+                    <CardDescription>选择包含二维码的图片文件进行识别</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
@@ -502,6 +577,7 @@ export default function QrCodeTools() {
                         ref={fileInputRef}
                         className="cursor-pointer"
                       />
+                      <p className="text-xs text-gray-500 mt-1">支持 JPG、PNG、GIF、WebP 等格式</p>
                     </div>
 
                     {uploadedImage && (
@@ -513,6 +589,9 @@ export default function QrCodeTools() {
                             className="max-w-full max-h-[300px] object-contain mx-auto rounded"
                           />
                         </div>
+                        <div className="text-sm text-gray-600">
+                          <p>✅ 图片已上传，点击下方按钮开始识别</p>
+                        </div>
                         <Button onClick={recognizeQR} disabled={isRecognizing} className="w-full">
                           {isRecognizing ? (
                             <>
@@ -522,7 +601,7 @@ export default function QrCodeTools() {
                           ) : (
                             <>
                               <Scan className="w-4 h-4 mr-2" />
-                              识别二维码
+                              开始识别二维码
                             </>
                           )}
                         </Button>
@@ -533,8 +612,9 @@ export default function QrCodeTools() {
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500 min-h-[200px] flex items-center justify-center">
                         <div>
                           <FileImage className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                          <p>上传包含二维码的图片</p>
-                          <p className="text-sm mt-1">支持 JPG、PNG、GIF 等格式</p>
+                          <p className="font-medium">上传包含二维码的图片</p>
+                          <p className="text-sm mt-1">支持 JPG、PNG、GIF、WebP 等格式</p>
+                          <p className="text-xs mt-2 text-gray-400">建议上传清晰、完整的二维码图片以获得最佳识别效果</p>
                         </div>
                       </div>
                     )}
@@ -548,7 +628,7 @@ export default function QrCodeTools() {
                       <CheckCircle className="w-5 h-5" />
                       识别结果
                     </CardTitle>
-                    <CardDescription>二维码中包含的内容</CardDescription>
+                    <CardDescription>二维码中包含的内容信息</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {recognizedText ? (
@@ -559,50 +639,51 @@ export default function QrCodeTools() {
                             id="recognized-content"
                             value={recognizedText}
                             readOnly
-                            className="min-h-[200px] font-mono text-sm"
+                            className="min-h-[200px] font-mono text-sm bg-gray-50"
                           />
                         </div>
-                        <div className="text-sm text-gray-600">
-                          <p>内容长度: {recognizedText.length} 字符</p>
-                          <p>
-                            内容类型:{" "}
-                            {recognizedText.startsWith("http")
-                              ? "网址链接"
-                              : recognizedText.startsWith("mailto:")
-                                ? "电子邮件"
-                                : recognizedText.startsWith("tel:")
-                                  ? "电话号码"
-                                  : recognizedText.startsWith("WIFI:")
-                                    ? "WiFi信息"
-                                    : recognizedText.startsWith("BEGIN:VCARD")
-                                      ? "联系人名片"
-                                      : "纯文本"}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={() => copyToClipboard(recognizedText)}
-                          className="w-full bg-transparent"
-                          variant="outline"
-                        >
-                          {copied ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              已复制
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-4 h-4 mr-2" />
-                              复制内容
-                            </>
+
+                        {/* 二维码详细信息 */}
+                        {qrCodeInfo && (
+                          <div className="text-sm text-gray-600 space-y-2 p-3 bg-gray-50 rounded-lg">
+                            <h4 className="font-semibold text-gray-800">二维码信息</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                              <p>📝 内容长度: {recognizedText.length} 字符</p>
+                              <p>🏷️ 内容类型: {getContentType(recognizedText)}</p>
+                              <p>📊 版本: {qrCodeInfo.version}</p>
+                              <p>🛡️ 纠错级别: {qrCodeInfo.errorCorrectionLevel}</p>
+                            </div>
+                            {qrCodeInfo.location && <p>📍 位置: 已检测到二维码边界</p>}
+                          </div>
+                        )}
+
+                        <div className="flex gap-2">
+                          <Button onClick={() => copyToClipboard(recognizedText)} className="flex-1" variant="outline">
+                            {copied ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                已复制
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4 mr-2" />
+                                复制内容
+                              </>
+                            )}
+                          </Button>
+                          {(recognizedText.startsWith("http://") || recognizedText.startsWith("https://")) && (
+                            <Button onClick={() => window.open(recognizedText, "_blank")} variant="outline">
+                              打开链接
+                            </Button>
                           )}
-                        </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-gray-500 min-h-[300px] flex items-center justify-center">
                         <div>
                           <Scan className="w-12 h-12 mx-auto mb-2 text-gray-400" />
-                          <p>识别结果将在这里显示</p>
-                          <p className="text-sm mt-1">上传图片后点击识别按钮</p>
+                          <p className="font-medium">识别结果将在这里显示</p>
+                          <p className="text-sm mt-1">上传图片后点击识别按钮开始识别</p>
                         </div>
                       </div>
                     )}
@@ -617,23 +698,41 @@ export default function QrCodeTools() {
                   <CardDescription>为了获得最佳识别效果，请注意以下事项</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-3 gap-6">
                     <div>
-                      <h3 className="font-semibold mb-2">图片要求</h3>
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <Camera className="w-4 h-4" />
+                        图片要求
+                      </h3>
                       <ul className="text-sm text-gray-600 space-y-1">
-                        <li>• 图片清晰，二维码完整</li>
+                        <li>• 图片清晰，二维码完整无遮挡</li>
                         <li>• 二维码与背景对比度高</li>
-                        <li>• 避免模糊、倾斜或变形</li>
-                        <li>• 支持常见图片格式</li>
+                        <li>• 避免模糊、倾斜或严重变形</li>
+                        <li>• 建议图片分辨率不低于 200x200</li>
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-semibold mb-2">识别范围</h3>
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <FileImage className="w-4 h-4" />
+                        支持格式
+                      </h3>
                       <ul className="text-sm text-gray-600 space-y-1">
-                        <li>• 文本内容</li>
-                        <li>• 网址链接</li>
-                        <li>• 联系信息</li>
-                        <li>• WiFi配置</li>
+                        <li>• JPG / JPEG 格式</li>
+                        <li>• PNG 格式（推荐）</li>
+                        <li>• GIF 格式</li>
+                        <li>• WebP 格式</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-2 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        技术特性
+                      </h3>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        <li>• 使用 jsQR 专业识别库</li>
+                        <li>• 支持反色图像处理</li>
+                        <li>• 自动检测二维码边界</li>
+                        <li>• 显示详细的二维码信息</li>
                       </ul>
                     </div>
                   </div>
