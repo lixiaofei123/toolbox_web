@@ -9,192 +9,154 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, Copy, Clock, Calendar, Timer, Play, AlertCircle, CheckCircle, Info } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { ArrowLeft, Copy, Clock, Calendar, Info, Sparkles } from "lucide-react"
 
-// Cron预设模板
-const cronPresets = [
-  { name: "每分钟", expression: "* * * * *", description: "每分钟执行一次" },
-  { name: "每小时", expression: "0 * * * *", description: "每小时的第0分钟执行" },
-  { name: "每天午夜", expression: "0 0 * * *", description: "每天凌晨0点执行" },
-  { name: "每天上午9点", expression: "0 9 * * *", description: "每天上午9点执行" },
-  { name: "每周一上午9点", expression: "0 9 * * 1", description: "每周一上午9点执行" },
-  { name: "每月1号", expression: "0 0 1 * *", description: "每月1号凌晨执行" },
-  { name: "工作日上午9点", expression: "0 9 * * 1-5", description: "周一到周五上午9点执行" },
-  { name: "每15分钟", expression: "*/15 * * * *", description: "每15分钟执行一次" },
-  { name: "每30分钟", expression: "*/30 * * * *", description: "每30分钟执行一次" },
-  { name: "每季度", expression: "0 0 1 */3 *", description: "每季度第一天执行" },
+// 预设模板
+const cronTemplates = [
+  { name: "每分钟", cron: "* * * * *", desc: "每分钟执行一次" },
+  { name: "每小时", cron: "0 * * * *", desc: "每小时的第0分钟执行" },
+  { name: "每天午夜", cron: "0 0 * * *", desc: "每天凌晨0点执行" },
+  { name: "每天上午9点", cron: "0 9 * * *", desc: "每天上午9点执行" },
+  { name: "每周一上午9点", cron: "0 9 * * 1", desc: "每周一上午9点执行" },
+  { name: "每月1号", cron: "0 0 1 * *", desc: "每月1号凌晨0点执行" },
+  { name: "工作日上午9点", cron: "0 9 * * 1-5", desc: "周一到周五上午9点执行" },
+  { name: "每15分钟", cron: "*/15 * * * *", desc: "每15分钟执行一次" },
+  { name: "每30分钟", cron: "*/30 * * * *", desc: "每30分钟执行一次" },
+  { name: "每6小时", cron: "0 */6 * * *", desc: "每6小时执行一次" },
 ]
 
-// 解析Cron表达式
-function parseCronExpression(expression: string) {
-  const parts = expression.trim().split(/\s+/)
+export default function CronGeneratorPage() {
+  const [minute, setMinute] = useState("*")
+  const [hour, setHour] = useState("*")
+  const [day, setDay] = useState("*")
+  const [month, setMonth] = useState("*")
+  const [weekday, setWeekday] = useState("*")
+  const [cronExpression, setCronExpression] = useState("* * * * *")
+  const [parseCron, setParseCron] = useState("")
+  const [parseResult, setParseResult] = useState<any>(null)
+  const [nextExecution, setNextExecution] = useState<string>("")
+  const { toast } = useToast()
 
-  if (parts.length !== 5) {
-    throw new Error("Cron表达式必须包含5个部分：分 时 日 月 周")
+  // 生成cron表达式
+  useEffect(() => {
+    const expression = `${minute} ${hour} ${day} ${month} ${weekday}`
+    setCronExpression(expression)
+  }, [minute, hour, day, month, weekday])
+
+  // 复制到剪贴板
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: "复制成功",
+        description: "已复制到剪贴板",
+      })
+    })
   }
 
-  const [minute, hour, day, month, weekday] = parts
+  // 使用模板
+  const useTemplate = (template: any) => {
+    const parts = template.cron.split(" ")
+    setMinute(parts[0] || "*")
+    setHour(parts[1] || "*")
+    setDay(parts[2] || "*")
+    setMonth(parts[3] || "*")
+    setWeekday(parts[4] || "*")
 
-  const parseField = (field: string, min: number, max: number, names?: string[]) => {
-    if (field === "*") return "任意"
+    toast({
+      title: "模板已应用",
+      description: template.desc,
+    })
+  }
+
+  // 解析cron表达式
+  const analyzeCron = () => {
+    if (!parseCron.trim()) {
+      toast({
+        title: "请输入表达式",
+        description: "请输入要分析的Cron表达式",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const parts = parseCron.trim().split(/\s+/)
+    if (parts.length !== 5) {
+      toast({
+        title: "格式错误",
+        description: "请输入标准的5段式Cron表达式",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const [min, hr, d, mon, wd] = parts
+    const result = {
+      minute: parseField(min, "分钟", 0, 59),
+      hour: parseField(hr, "小时", 0, 23),
+      day: parseField(d, "日", 1, 31),
+      month: parseField(mon, "月", 1, 12),
+      weekday: parseField(wd, "周", 0, 6, ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]),
+    }
+
+    setParseResult(result)
+
+    // 计算下次执行时间（简化版本）
+    calculateNextExecution(parts)
+  }
+
+  // 解析字段
+  const parseField = (field: string, name: string, min: number, max: number, labels?: string[]) => {
+    if (field === "*") {
+      return `任意${name}`
+    }
+
     if (field.includes("/")) {
       const [range, step] = field.split("/")
-      return `每${step}${names ? names[0] : ""}`
+      if (range === "*") {
+        return `每${step}${name === "周" ? "天" : name === "日" ? "天" : name}`
+      }
     }
+
     if (field.includes("-")) {
       const [start, end] = field.split("-")
-      return `${start}-${end}`
+      const startLabel = labels ? labels[Number.parseInt(start)] : start
+      const endLabel = labels ? labels[Number.parseInt(end)] : end
+      return `${startLabel}到${endLabel}`
     }
+
     if (field.includes(",")) {
-      return field.split(",").join(", ")
+      const values = field.split(",")
+      const valueLabels = values.map((v) => (labels ? labels[Number.parseInt(v)] : v))
+      return valueLabels.join("、")
     }
-    if (names && !isNaN(Number(field))) {
-      const index = Number(field)
-      return names[index] || field
+
+    if (labels && !isNaN(Number.parseInt(field))) {
+      return labels[Number.parseInt(field)]
     }
+
     return field
   }
 
-  const monthNames = ["", "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
-  const weekdayNames = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
-
-  return {
-    minute: parseField(minute, 0, 59),
-    hour: parseField(hour, 0, 23),
-    day: parseField(day, 1, 31),
-    month: parseField(month, 1, 12, monthNames),
-    weekday: parseField(weekday, 0, 6, weekdayNames),
-  }
-}
-
-// 生成人类可读的描述
-function generateDescription(parsed: any) {
-  const { minute, hour, day, month, weekday } = parsed
-
-  let description = "执行时间："
-
-  if (month !== "任意") description += `${month} `
-  if (day !== "任意") description += `${day}日 `
-  if (weekday !== "任意") description += `${weekday} `
-  if (hour !== "任意") description += `${hour}时 `
-  if (minute !== "任意") description += `${minute}分`
-
-  if (description === "执行时间：") {
-    description = "每分钟执行"
-  }
-
-  return description
-}
-
-// 计算下次执行时间（简化版本）
-function getNextExecution(expression: string) {
-  try {
-    const parts = expression.trim().split(/\s+/)
-    if (parts.length !== 5) return null
-
+  // 计算下次执行时间（简化版本）
+  const calculateNextExecution = (parts: string[]) => {
     const now = new Date()
     const next = new Date(now)
 
-    // 简化计算，仅处理基本情况
-    const [minute, hour, day, month, weekday] = parts
-
-    if (minute !== "*" && !minute.includes("/")) {
-      next.setMinutes(Number.parseInt(minute))
+    // 这里是简化的计算，实际应该更复杂
+    if (parts[0] !== "*") {
+      next.setMinutes(Number.parseInt(parts[0]))
     }
-    if (hour !== "*" && !hour.includes("/")) {
-      next.setHours(Number.parseInt(hour))
+    if (parts[1] !== "*") {
+      next.setHours(Number.parseInt(parts[1]))
     }
 
-    // 如果设置的时间已过，则推到下一天
+    // 如果时间已过，加一天
     if (next <= now) {
       next.setDate(next.getDate() + 1)
     }
 
-    return next.toLocaleString("zh-CN")
-  } catch {
-    return null
-  }
-}
-
-export default function CronGeneratorPage() {
-  const [toast, setToast] = useState<any>(null)
-
-  // 生成器状态
-  const [generatorMinute, setGeneratorMinute] = useState("*")
-  const [generatorHour, setGeneratorHour] = useState("*")
-  const [generatorDay, setGeneratorDay] = useState("*")
-  const [generatorMonth, setGeneratorMonth] = useState("*")
-  const [generatorWeekday, setGeneratorWeekday] = useState("*")
-  const [generatedExpression, setGeneratedExpression] = useState("* * * * *")
-
-  // 分析器状态
-  const [inputExpression, setInputExpression] = useState("")
-  const [parsedResult, setParsedResult] = useState<any>(null)
-  const [parseError, setParseError] = useState("")
-  const [description, setDescription] = useState("")
-  const [nextExecution, setNextExecution] = useState("")
-
-  // 更新生成的表达式
-  useEffect(() => {
-    const expression = `${generatorMinute} ${generatorHour} ${generatorDay} ${generatorMonth} ${generatorWeekday}`
-    setGeneratedExpression(expression)
-  }, [generatorMinute, generatorHour, generatorDay, generatorMonth, generatorWeekday])
-
-  // 复制到剪贴板
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setToast({
-        title: "复制成功",
-        description: "Cron表达式已复制到剪贴板",
-      })
-    } catch (err) {
-      setToast({
-        title: "复制失败",
-        description: "请手动复制表达式",
-        variant: "destructive",
-      })
-    }
-  }
-
-  // 使用预设模板
-  const usePreset = (expression: string) => {
-    const parts = expression.split(" ")
-    setGeneratorMinute(parts[0])
-    setGeneratorHour(parts[1])
-    setGeneratorDay(parts[2])
-    setGeneratorMonth(parts[3])
-    setGeneratorWeekday(parts[4])
-  }
-
-  // 分析表达式
-  const analyzeExpression = () => {
-    if (!inputExpression.trim()) {
-      setParseError("请输入Cron表达式")
-      return
-    }
-
-    try {
-      const parsed = parseCronExpression(inputExpression)
-      setParsedResult(parsed)
-      setDescription(generateDescription(parsed))
-      setNextExecution(getNextExecution(inputExpression) || "无法计算")
-      setParseError("")
-    } catch (err) {
-      setParseError(err instanceof Error ? err.message : "解析失败")
-      setParsedResult(null)
-      setDescription("")
-      setNextExecution("")
-    }
-  }
-
-  // 清空分析结果
-  const clearAnalysis = () => {
-    setInputExpression("")
-    setParsedResult(null)
-    setParseError("")
-    setDescription("")
-    setNextExecution("")
+    setNextExecution(next.toLocaleString("zh-CN"))
   }
 
   return (
@@ -210,252 +172,188 @@ export default function CronGeneratorPage() {
               </Button>
             </Link>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-violet-500 rounded-lg flex items-center justify-center">
-                <Timer className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Cron 表达式工具</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+                Cron 表达式工具
+              </h1>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
-        {/* 工具说明 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Info className="w-5 h-5" />
-              Cron表达式格式说明
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-semibold mb-2">格式：分 时 日 月 周</h4>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div>• 分：0-59</div>
-                  <div>• 时：0-23</div>
-                  <div>• 日：1-31</div>
-                  <div>• 月：1-12</div>
-                  <div>• 周：0-6 (0=周日)</div>
-                </div>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">特殊字符</h4>
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div>• * : 任意值</div>
-                  <div>• , : 列举多个值</div>
-                  <div>• - : 范围</div>
-                  <div>• / : 步长</div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="max-w-4xl mx-auto p-4 space-y-6">
         <Tabs defaultValue="generator" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="generator">表达式生成器</TabsTrigger>
             <TabsTrigger value="analyzer">表达式分析器</TabsTrigger>
           </TabsList>
 
-          {/* 生成器 */}
           <TabsContent value="generator" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* 生成器配置 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
-                    时间配置
-                  </CardTitle>
-                  <CardDescription>选择执行时间参数生成Cron表达式</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="minute">分钟 (0-59)</Label>
-                      <Input
-                        id="minute"
-                        value={generatorMinute}
-                        onChange={(e) => setGeneratorMinute(e.target.value)}
-                        placeholder="* 或 0-59"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="hour">小时 (0-23)</Label>
-                      <Input
-                        id="hour"
-                        value={generatorHour}
-                        onChange={(e) => setGeneratorHour(e.target.value)}
-                        placeholder="* 或 0-23"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="day">日 (1-31)</Label>
-                      <Input
-                        id="day"
-                        value={generatorDay}
-                        onChange={(e) => setGeneratorDay(e.target.value)}
-                        placeholder="* 或 1-31"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="month">月 (1-12)</Label>
-                      <Input
-                        id="month"
-                        value={generatorMonth}
-                        onChange={(e) => setGeneratorMonth(e.target.value)}
-                        placeholder="* 或 1-12"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="weekday">周 (0-6)</Label>
-                      <Input
-                        id="weekday"
-                        value={generatorWeekday}
-                        onChange={(e) => setGeneratorWeekday(e.target.value)}
-                        placeholder="* 或 0-6"
-                      />
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <Label className="text-base font-semibold">生成的表达式</Label>
-                    <div className="flex items-center gap-2 mt-2">
-                      <code className="flex-1 p-3 bg-gray-100 rounded-lg font-mono text-lg">{generatedExpression}</code>
-                      <Button size="sm" onClick={() => copyToClipboard(generatedExpression)}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 预设模板 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    常用模板
-                  </CardTitle>
-                  <CardDescription>点击使用预设的Cron表达式模板</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {cronPresets.map((preset, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                        onClick={() => usePreset(preset.expression)}
-                      >
-                        <div>
-                          <div className="font-medium">{preset.name}</div>
-                          <div className="text-sm text-gray-600">{preset.description}</div>
-                        </div>
-                        <Badge variant="secondary" className="font-mono">
-                          {preset.expression}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* 分析器 */}
-          <TabsContent value="analyzer" className="space-y-6">
+            {/* 生成器 */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Play className="w-5 h-5" />
-                  表达式分析
+                  <Clock className="w-5 h-5" />
+                  Cron 表达式生成器
                 </CardTitle>
-                <CardDescription>输入Cron表达式查看详细解析结果</CardDescription>
+                <CardDescription>通过可视化界面生成标准的Cron表达式</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="expression">Cron表达式</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Input
-                      id="expression"
-                      value={inputExpression}
-                      onChange={(e) => setInputExpression(e.target.value)}
-                      placeholder="例如: 0 9 * * 1-5"
-                      className="flex-1"
-                    />
-                    <Button onClick={analyzeExpression}>分析</Button>
-                    <Button variant="outline" onClick={clearAnalysis}>
-                      清空
+              <CardContent className="space-y-6">
+                {/* 字段输入 */}
+                <div className="grid grid-cols-5 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="minute">分钟 (0-59)</Label>
+                    <Input id="minute" value={minute} onChange={(e) => setMinute(e.target.value)} placeholder="*" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hour">小时 (0-23)</Label>
+                    <Input id="hour" value={hour} onChange={(e) => setHour(e.target.value)} placeholder="*" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="day">日 (1-31)</Label>
+                    <Input id="day" value={day} onChange={(e) => setDay(e.target.value)} placeholder="*" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="month">月 (1-12)</Label>
+                    <Input id="month" value={month} onChange={(e) => setMonth(e.target.value)} placeholder="*" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weekday">周 (0-6)</Label>
+                    <Input id="weekday" value={weekday} onChange={(e) => setWeekday(e.target.value)} placeholder="*" />
+                  </div>
+                </div>
+
+                {/* 生成结果 */}
+                <div className="space-y-2">
+                  <Label>生成的Cron表达式</Label>
+                  <div className="flex gap-2">
+                    <Input value={cronExpression} readOnly className="font-mono bg-gray-50" />
+                    <Button onClick={() => copyToClipboard(cronExpression)}>
+                      <Copy className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
 
-                {parseError && (
-                  <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{parseError}</span>
+                {/* 说明 */}
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-2">特殊字符说明：</p>
+                      <ul className="space-y-1">
+                        <li>
+                          <code>*</code> - 任意值
+                        </li>
+                        <li>
+                          <code>,</code> - 列举多个值 (如: 1,3,5)
+                        </li>
+                        <li>
+                          <code>-</code> - 范围 (如: 1-5)
+                        </li>
+                        <li>
+                          <code>/</code> - 步长 (如: */15)
+                        </li>
+                      </ul>
+                    </div>
                   </div>
-                )}
+                </div>
+              </CardContent>
+            </Card>
 
-                {parsedResult && (
+            {/* 常用模板 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>常用模板</CardTitle>
+                <CardDescription>点击使用预设的常用时间模板</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {cronTemplates.map((template, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      className="h-auto p-3 flex flex-col items-start bg-transparent"
+                      onClick={() => useTemplate(template)}
+                    >
+                      <div className="font-medium">{template.name}</div>
+                      <div className="text-xs text-gray-500 font-mono">{template.cron}</div>
+                      <div className="text-xs text-gray-400">{template.desc}</div>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analyzer" className="space-y-6">
+            {/* 分析器 */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5" />
+                  Cron 表达式分析器
+                </CardTitle>
+                <CardDescription>解析现有的Cron表达式，显示执行时间规律</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="parseCron">输入Cron表达式</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="parseCron"
+                      value={parseCron}
+                      onChange={(e) => setParseCron(e.target.value)}
+                      placeholder="例如: 0 9 * * 1-5"
+                      className="font-mono"
+                    />
+                    <Button onClick={analyzeCron}>分析</Button>
+                  </div>
+                </div>
+
+                {parseResult && (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700">
-                      <CheckCircle className="w-5 h-5" />
-                      <span>表达式解析成功</span>
+                    <Separator />
+                    <div>
+                      <h3 className="font-medium mb-3">解析结果</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">分钟：</span>
+                            <Badge variant="outline">{parseResult.minute}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">小时：</span>
+                            <Badge variant="outline">{parseResult.hour}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">日：</span>
+                            <Badge variant="outline">{parseResult.day}</Badge>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">月：</span>
+                            <Badge variant="outline">{parseResult.month}</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">周：</span>
+                            <Badge variant="outline">{parseResult.weekday}</Badge>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">字段解析</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">分钟:</span>
-                            <span className="font-mono">{parsedResult.minute}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">小时:</span>
-                            <span className="font-mono">{parsedResult.hour}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">日:</span>
-                            <span className="font-mono">{parsedResult.day}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">月:</span>
-                            <span className="font-mono">{parsedResult.month}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">周:</span>
-                            <span className="font-mono">{parsedResult.weekday}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">执行信息</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div>
-                            <div className="text-gray-600 mb-1">描述:</div>
-                            <div className="font-medium">{description}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-600 mb-1">下次执行:</div>
-                            <div className="font-medium">{nextExecution}</div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                    {nextExecution && (
+                      <div className="bg-green-50 p-4 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-5 h-5 text-green-600" />
+                          <span className="font-medium text-green-800">预计下次执行时间：</span>
+                          <span className="text-green-700">{nextExecution}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

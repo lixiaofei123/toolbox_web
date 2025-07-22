@@ -17,6 +17,8 @@ import {
   Clock,
   Key,
   Timer,
+  Hash,
+  Fingerprint,
 } from "lucide-react"
 
 const tools = [
@@ -67,6 +69,22 @@ const tools = [
     icon: Timer,
     href: "/cron-generator",
     color: "bg-violet-500",
+  },
+  {
+    id: "md5-generator",
+    title: "MD5 生成",
+    description: "字符串和文件MD5哈希值生成",
+    icon: Hash,
+    href: "/md5-generator",
+    color: "bg-emerald-500",
+  },
+  {
+    id: "uuid-generator",
+    title: "UUID 生成",
+    description: "批量生成唯一标识符UUID",
+    icon: Fingerprint,
+    href: "/uuid-generator",
+    color: "bg-rose-500",
   },
   {
     id: "json-formatter",
