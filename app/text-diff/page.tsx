@@ -16,8 +16,8 @@ interface DiffLine {
   type: "added" | "removed" | "unchanged"
   content: string
   lineNumber: {
-    old?: number
-    new?: number
+    left?: number
+    right?: number
   }
 }
 
@@ -47,14 +47,12 @@ export default function TextDiffPage() {
 
   // 简单的文本差异算法
   const diffLines = useMemo(() => {
+    if (!leftText && !rightText) return []
+
     const processText = (text: string) => {
       let processed = text
-      if (ignoreCase) {
-        processed = processed.toLowerCase()
-      }
-      if (ignoreWhitespace) {
-        processed = processed.replace(/\s+/g, " ").trim()
-      }
+      if (ignoreCase) processed = processed.toLowerCase()
+      if (ignoreWhitespace) processed = processed.replace(/\s+/g, " ").trim()
       return processed.split("\n")
     }
 
@@ -72,78 +70,94 @@ export default function TextDiffPage() {
       const rightLine = rightLines[rightIndex]
 
       if (leftIndex >= leftLines.length) {
-        // 只剩右侧行（新增）
+        // 右侧还有内容，标记为新增
         result.push({
           type: "added",
-          content: originalRightLines[rightIndex],
-          lineNumber: { new: rightIndex + 1 },
+          content: originalRightLines[rightIndex] || "",
+          lineNumber: { right: rightIndex + 1 },
         })
         rightIndex++
       } else if (rightIndex >= rightLines.length) {
-        // 只剩左侧行（删除）
+        // 左侧还有内容，标记为删除
         result.push({
           type: "removed",
-          content: originalLeftLines[leftIndex],
-          lineNumber: { old: leftIndex + 1 },
+          content: originalLeftLines[leftIndex] || "",
+          lineNumber: { left: leftIndex + 1 },
         })
         leftIndex++
       } else if (leftLine === rightLine) {
-        // 相同行
+        // 内容相同
         result.push({
           type: "unchanged",
-          content: originalLeftLines[leftIndex],
-          lineNumber: { old: leftIndex + 1, new: rightIndex + 1 },
+          content: originalLeftLines[leftIndex] || "",
+          lineNumber: { left: leftIndex + 1, right: rightIndex + 1 },
         })
         leftIndex++
         rightIndex++
       } else {
-        // 查找是否在后续行中有匹配
-        let foundInRight = -1
-        let foundInLeft = -1
+        // 内容不同，查找是否在后续行中有匹配
+        let foundMatch = false
+        const lookAhead = 3 // 向前查找的行数
 
-        // 在右侧后续行中查找左侧当前行
-        for (let i = rightIndex + 1; i < Math.min(rightLines.length, rightIndex + 5); i++) {
-          if (leftLine === rightLines[i]) {
-            foundInRight = i
+        // 检查右侧是否有匹配的行
+        for (let i = 1; i <= lookAhead && rightIndex + i < rightLines.length; i++) {
+          if (leftLine === rightLines[rightIndex + i]) {
+            // 在右侧找到匹配，中间的行标记为新增
+            for (let j = 0; j < i; j++) {
+              result.push({
+                type: "added",
+                content: originalRightLines[rightIndex + j] || "",
+                lineNumber: { right: rightIndex + j + 1 },
+              })
+            }
+            result.push({
+              type: "unchanged",
+              content: originalLeftLines[leftIndex] || "",
+              lineNumber: { left: leftIndex + 1, right: rightIndex + i + 1 },
+            })
+            leftIndex++
+            rightIndex += i + 1
+            foundMatch = true
             break
           }
         }
 
-        // 在左侧后续行中查找右侧当前行
-        for (let i = leftIndex + 1; i < Math.min(leftLines.length, leftIndex + 5); i++) {
-          if (rightLine === leftLines[i]) {
-            foundInLeft = i
-            break
+        if (!foundMatch) {
+          // 检查左侧是否有匹配的行
+          for (let i = 1; i <= lookAhead && leftIndex + i < leftLines.length; i++) {
+            if (rightLine === leftLines[leftIndex + i]) {
+              // 在左侧找到匹配，中间的行标记为删除
+              for (let j = 0; j < i; j++) {
+                result.push({
+                  type: "removed",
+                  content: originalLeftLines[leftIndex + j] || "",
+                  lineNumber: { left: leftIndex + j + 1 },
+                })
+              }
+              result.push({
+                type: "unchanged",
+                content: originalRightLines[rightIndex] || "",
+                lineNumber: { left: leftIndex + i + 1, right: rightIndex + 1 },
+              })
+              leftIndex += i + 1
+              rightIndex++
+              foundMatch = true
+              break
+            }
           }
         }
 
-        if (foundInRight !== -1 && (foundInLeft === -1 || foundInRight - rightIndex <= foundInLeft - leftIndex)) {
-          // 右侧有匹配，左侧行被删除，右侧中间行被添加
+        if (!foundMatch) {
+          // 没有找到匹配，标记为删除和新增
           result.push({
             type: "removed",
-            content: originalLeftLines[leftIndex],
-            lineNumber: { old: leftIndex + 1 },
-          })
-          leftIndex++
-        } else if (foundInLeft !== -1) {
-          // 左侧有匹配，右侧行被添加
-          result.push({
-            type: "added",
-            content: originalRightLines[rightIndex],
-            lineNumber: { new: rightIndex + 1 },
-          })
-          rightIndex++
-        } else {
-          // 都没有匹配，当作修改（删除+添加）
-          result.push({
-            type: "removed",
-            content: originalLeftLines[leftIndex],
-            lineNumber: { old: leftIndex + 1 },
+            content: originalLeftLines[leftIndex] || "",
+            lineNumber: { left: leftIndex + 1 },
           })
           result.push({
             type: "added",
-            content: originalRightLines[rightIndex],
-            lineNumber: { new: rightIndex + 1 },
+            content: originalRightLines[rightIndex] || "",
+            lineNumber: { right: rightIndex + 1 },
           })
           leftIndex++
           rightIndex++
@@ -161,30 +175,30 @@ export default function TextDiffPage() {
     return { added, removed, unchanged }
   }, [diffLines])
 
-  const getLineIcon = (type: string) => {
+  const getLineIcon = (type: DiffLine["type"]) => {
     switch (type) {
       case "added":
         return <Plus className="w-3 h-3 text-green-600" />
       case "removed":
         return <Minus className="w-3 h-3 text-red-600" />
-      default:
+      case "unchanged":
         return <Equal className="w-3 h-3 text-gray-400" />
     }
   }
 
-  const getLineClass = (type: string) => {
+  const getLineClass = (type: DiffLine["type"]) => {
     switch (type) {
       case "added":
         return "bg-green-50 border-l-4 border-green-400"
       case "removed":
         return "bg-red-50 border-l-4 border-red-400"
-      default:
-        return "bg-white border-l-4 border-gray-200"
+      case "unchanged":
+        return "bg-white"
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -196,7 +210,7 @@ export default function TextDiffPage() {
               </Button>
             </Link>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center">
                 <GitCompare className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-gray-900">文本差异对比</h1>
@@ -213,8 +227,9 @@ export default function TextDiffPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   原始文本
-                  <Button size="sm" variant="ghost" onClick={() => copyToClipboard(leftText)} disabled={!leftText}>
-                    <Copy className="w-3 h-3" />
+                  <Button size="sm" variant="outline" onClick={() => copyToClipboard(leftText)}>
+                    <Copy className="w-3 h-3 mr-1" />
+                    复制
                   </Button>
                 </CardTitle>
                 <CardDescription>输入要对比的原始文本</CardDescription>
@@ -233,8 +248,9 @@ export default function TextDiffPage() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   对比文本
-                  <Button size="sm" variant="ghost" onClick={() => copyToClipboard(rightText)} disabled={!rightText}>
-                    <Copy className="w-3 h-3" />
+                  <Button size="sm" variant="outline" onClick={() => copyToClipboard(rightText)}>
+                    <Copy className="w-3 h-3 mr-1" />
+                    复制
                   </Button>
                 </CardTitle>
                 <CardDescription>输入要对比的新文本</CardDescription>
@@ -257,7 +273,7 @@ export default function TextDiffPage() {
               <CardDescription>调整文本对比的设置</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap items-center gap-6">
+              <div className="flex items-center gap-6">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="ignoreWhitespace"
@@ -278,8 +294,8 @@ export default function TextDiffPage() {
                     忽略大小写
                   </Label>
                 </div>
-                <Button variant="outline" size="sm" onClick={swapTexts} disabled={!leftText && !rightText}>
-                  <ArrowUpDown className="w-4 h-4 mr-2" />
+                <Button variant="outline" size="sm" onClick={swapTexts}>
+                  <ArrowUpDown className="w-3 h-3 mr-1" />
                   交换文本
                 </Button>
               </div>
@@ -290,11 +306,11 @@ export default function TextDiffPage() {
           {(leftText || rightText) && (
             <Card>
               <CardHeader>
-                <CardTitle>差异统计</CardTitle>
-                <CardDescription>文本变更的统计信息</CardDescription>
+                <CardTitle>对比统计</CardTitle>
+                <CardDescription>文本差异的统计信息</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex items-center gap-4">
                   <Badge variant="default" className="bg-green-500">
                     <Plus className="w-3 h-3 mr-1" />
                     新增 {stats.added} 行
@@ -313,46 +329,50 @@ export default function TextDiffPage() {
           )}
 
           {/* 差异结果 */}
-          {(leftText || rightText) && (
-            <Card>
-              <CardHeader>
-                <CardTitle>差异结果</CardTitle>
-                <CardDescription>逐行显示文本差异，绿色表示新增，红色表示删除</CardDescription>
-              </CardHeader>
-              <CardContent>
+          <Card>
+            <CardHeader>
+              <CardTitle>差异对比结果</CardTitle>
+              <CardDescription>逐行显示文本的差异变化</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {diffLines.length > 0 ? (
                 <ScrollArea className="h-[600px]">
                   <div className="space-y-1">
                     {diffLines.map((line, index) => (
-                      <div key={index} className={`p-2 ${getLineClass(line.type)} font-mono text-sm`}>
+                      <div key={index} className={`p-2 rounded ${getLineClass(line.type)}`}>
                         <div className="flex items-start gap-2">
-                          <div className="flex items-center gap-1 text-xs text-gray-500 min-w-[80px]">
+                          <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
                             {getLineIcon(line.type)}
-                            <span>
-                              {line.lineNumber.old && `${line.lineNumber.old}`}
-                              {line.lineNumber.old && line.lineNumber.new && ","}
-                              {line.lineNumber.new && `${line.lineNumber.new}`}
-                            </span>
+                            <div className="text-xs text-gray-500 font-mono min-w-[60px]">
+                              {line.lineNumber.left && (
+                                <span className="inline-block w-6 text-right">{line.lineNumber.left}</span>
+                              )}
+                              {!line.lineNumber.left && <span className="inline-block w-6"></span>}
+                              <span className="mx-1">|</span>
+                              {line.lineNumber.right && (
+                                <span className="inline-block w-6 text-right">{line.lineNumber.right}</span>
+                              )}
+                              {!line.lineNumber.right && <span className="inline-block w-6"></span>}
+                            </div>
                           </div>
-                          <div className="flex-1 whitespace-pre-wrap break-all">{line.content || "(空行)"}</div>
+                          <div className="flex-1 min-w-0">
+                            <pre className="font-mono text-sm whitespace-pre-wrap break-words">
+                              {line.content || " "}
+                            </pre>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-
-          {!leftText && !rightText && (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center text-gray-500">
+              ) : (
+                <div className="text-center py-12 text-gray-500">
                   <GitCompare className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                   <p>请输入要对比的文本内容</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

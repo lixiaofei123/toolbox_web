@@ -1,21 +1,20 @@
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  FileImage,
   ImageIcon,
-  Scissors,
+  Palette,
   QrCode,
   Key,
   Clock,
   Hash,
   Fingerprint,
   Search,
-  GitCompare,
   Braces,
-  Palette,
   LinkIcon,
   Shield,
   Calendar,
+  Crop,
+  GitCompare,
 } from "lucide-react"
 
 const tools = [
@@ -23,7 +22,7 @@ const tools = [
     title: "Base64 转换",
     description: "图片与Base64字符串互转",
     href: "/base64-converter",
-    icon: FileImage,
+    icon: ImageIcon,
     color: "bg-blue-500",
   },
   {
@@ -37,7 +36,7 @@ const tools = [
     title: "图片剪裁编辑",
     description: "剪裁、调整尺寸和比例",
     href: "/image-editor",
-    icon: Scissors,
+    icon: Crop,
     color: "bg-purple-500",
   },
   {
@@ -58,7 +57,7 @@ const tools = [
     title: "Cron 表达式",
     description: "生成和分析Cron定时任务表达式",
     href: "/cron-generator",
-    icon: Clock,
+    icon: Calendar,
     color: "bg-teal-500",
   },
   {
@@ -87,14 +86,14 @@ const tools = [
     description: "对比两段文本的差异，高亮显示变化",
     href: "/text-diff",
     icon: GitCompare,
-    color: "bg-emerald-500",
+    color: "bg-amber-500",
   },
   {
     title: "JSON 格式化",
     description: "JSON美化、压缩、格式验证",
     href: "/json-formatter",
     icon: Braces,
-    color: "bg-yellow-500",
+    color: "bg-emerald-500",
   },
   {
     title: "颜色转换",
@@ -121,14 +120,14 @@ const tools = [
     title: "时间戳转换",
     description: "时间戳与日期时间互转",
     href: "/timestamp-converter",
-    icon: Calendar,
-    color: "bg-amber-500",
+    icon: Clock,
+    color: "bg-yellow-500",
   },
 ]
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-6">
@@ -140,7 +139,7 @@ export default function HomePage() {
       </header>
 
       {/* Tools Grid */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {tools.map((tool) => {
             const IconComponent = tool.icon
@@ -154,10 +153,8 @@ export default function HomePage() {
                       >
                         <IconComponent className="w-5 h-5 text-white" />
                       </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
-                          {tool.title}
-                        </CardTitle>
+                      <div>
+                        <CardTitle className="text-lg">{tool.title}</CardTitle>
                       </div>
                     </div>
                   </CardHeader>
@@ -172,11 +169,10 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-white/50 backdrop-blur-sm mt-16">
+      <footer className="border-t bg-gray-50 mt-20">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center text-gray-600">
-            <p className="mb-2">在线工具箱 - 让开发更简单</p>
-            <p className="text-sm">包含 {tools.length} 个实用工具，持续更新中...</p>
+            <p>&copy; 2024 在线工具箱. 为开发者提供便捷的在线工具服务.</p>
           </div>
         </div>
       </footer>

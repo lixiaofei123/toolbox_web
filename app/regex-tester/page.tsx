@@ -11,9 +11,21 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ArrowLeft, Copy, CheckCircle, XCircle, Search, AlertCircle, BookOpen, TestTube, Scan } from "lucide-react"
+import {
+  ArrowLeft,
+  Copy,
+  CheckCircle,
+  XCircle,
+  Search,
+  AlertCircle,
+  BookOpen,
+  TestTube,
+  Scan,
+  Code,
+  FileCode,
+} from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface MatchResult {
@@ -161,6 +173,113 @@ export default function RegexTesterPage() {
     })
 
     return result
+  }
+
+  // 生成JavaScript代码
+  const generateJavaScriptCode = () => {
+    if (!pattern) return ""
+
+    const flagString = `${flags.global ? "g" : ""}${flags.ignoreCase ? "i" : ""}${flags.multiline ? "m" : ""}`
+    const regexLiteral = `/${pattern}/${flagString}`
+    const testTextVar = testText ? `"${testText.replace(/"/g, '\\"')}"` : '"your_text_here"'
+
+    if (testMode === "match") {
+      return `// 匹配测试 - 验证整个文本是否符合正则表达式
+const regex = ${regexLiteral};
+const text = ${testTextVar};
+
+// 方法1: 使用 test() 方法
+const isMatch = regex.test(text);
+console.log('匹配结果:', isMatch);
+
+// 方法2: 使用 match() 方法
+const matchResult = text.match(/^${pattern}$/);
+console.log('匹配详情:', matchResult);`
+    } else {
+      return `// 检索测试 - 在文本中查找所有匹配的部分
+const regex = ${regexLiteral};
+const text = ${testTextVar};
+
+// 方法1: 使用 match() 方法${flags.global ? " (全局匹配)" : ""}
+const matches = text.match(regex);
+console.log('匹配结果:', matches);
+
+// 方法2: 使用 exec() 方法获取详细信息
+${
+  flags.global
+    ? `const allMatches = [];
+let match;
+while ((match = regex.exec(text)) !== null) {
+  allMatches.push({
+    match: match[0],
+    index: match.index,
+    groups: match.slice(1)
+  });
+}
+console.log('详细匹配信息:', allMatches);`
+    : `const match = regex.exec(text);
+if (match) {
+  console.log('匹配内容:', match[0]);
+  console.log('匹配位置:', match.index);
+  console.log('分组信息:', match.slice(1));
+}`
+}`
+    }
+  }
+
+  // 生成Python代码
+  const generatePythonCode = () => {
+    if (!pattern) return ""
+
+    const flagsArray = []
+    if (flags.ignoreCase) flagsArray.push("re.IGNORECASE")
+    if (flags.multiline) flagsArray.push("re.MULTILINE")
+    const flagsStr = flagsArray.length > 0 ? `, ${flagsArray.join(" | ")}` : ""
+
+    const testTextVar = testText ? `"${testText.replace(/"/g, '\\"')}"` : '"your_text_here"'
+
+    if (testMode === "match") {
+      return `# 匹配测试 - 验证整个文本是否符合正则表达式
+import re
+
+pattern = r"${pattern}"
+text = ${testTextVar}
+
+# 方法1: 使用 fullmatch() 方法 (推荐)
+is_match = re.fullmatch(pattern, text${flagsStr}) is not None
+print(f"匹配结果: {is_match}")
+
+# 方法2: 使用 match() 方法
+match_result = re.match(f"^{pattern}$", text${flagsStr})
+if match_result:
+    print(f"匹配成功: {match_result.group()}")
+else:
+    print("匹配失败")`
+    } else {
+      return `# 检索测试 - 在文本中查找所有匹配的部分
+import re
+
+pattern = r"${pattern}"
+text = ${testTextVar}
+
+# 方法1: 使用 findall() 方法${flags.global ? " (查找所有匹配)" : ""}
+matches = re.findall(pattern, text${flagsStr})
+print(f"匹配结果: {matches}")
+
+# 方法2: 使用 finditer() 方法获取详细信息
+for match in re.finditer(pattern, text${flagsStr}):
+    print(f"匹配内容: {match.group()}")
+    print(f"匹配位置: {match.start()}-{match.end()}")
+    if match.groups():
+        print(f"分组信息: {match.groups()}")
+    print("---")
+
+# 方法3: 使用 search() 方法 (只查找第一个匹配)
+first_match = re.search(pattern, text${flagsStr})
+if first_match:
+    print(f"第一个匹配: {first_match.group()}")
+    print(f"匹配位置: {first_match.start()}-{first_match.end()}")`
+    }
   }
 
   return (
@@ -452,6 +571,63 @@ export default function RegexTesterPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* 代码生成 */}
+            {pattern && isValidRegex && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="w-5 h-5" />
+                    代码生成
+                  </CardTitle>
+                  <CardDescription>生成对应的JavaScript和Python代码</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="javascript" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="javascript" className="flex items-center gap-1">
+                        <FileCode className="w-3 h-3" />
+                        JavaScript
+                      </TabsTrigger>
+                      <TabsTrigger value="python" className="flex items-center gap-1">
+                        <FileCode className="w-3 h-3" />
+                        Python
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="javascript" className="mt-4">
+                      <div className="relative">
+                        <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
+                          <code>{generateJavaScriptCode()}</code>
+                        </pre>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute top-2 right-2 bg-transparent"
+                          onClick={() => copyToClipboard(generateJavaScriptCode())}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="python" className="mt-4">
+                      <div className="relative">
+                        <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
+                          <code>{generatePythonCode()}</code>
+                        </pre>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="absolute top-2 right-2 bg-transparent"
+                          onClick={() => copyToClipboard(generatePythonCode())}
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "在线工具箱 - 开发者实用工具集合",
-  description: "包含Base64转换、图片处理、二维码生成、JWT解析、正则表达式测试、文本对比等15个实用开发工具",
+  description: "为开发者提供便捷的在线工具服务，包括Base64转换、图片处理、正则表达式测试、文本对比等实用工具",
     generator: 'v0.dev'
 }
 
