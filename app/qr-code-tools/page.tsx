@@ -145,7 +145,7 @@ export default function QrCodeTools() {
       // 获取图像数据
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
-      // 使用 jsQR 库识别二维码
+      // 使用 jsQR 库识别二维���
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
         inversionAttempts: "dontInvert",
       })

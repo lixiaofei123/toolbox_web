@@ -548,7 +548,7 @@ export default function BrowserInfoPage() {
                     <li>硬件信息（CPU核心数等）</li>
                   </ul>
                   <p className="text-amber-600">
-                    <strong>隐私提示：</strong>浏览器指纹可能被用于跟踪用户，建议使用隐私保护工具。
+                    <strong>提示：</strong>不同的浏览器指纹算法生成的结果不一致
                   </p>
                 </div>
               </div>
