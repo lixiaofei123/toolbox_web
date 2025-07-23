@@ -56,33 +56,33 @@
 
 ### 1. 安装依赖 (Install dependencies)
 
-```bash
+\`\`\`bash
 pnpm install
-```
+\`\`\`
 
 ### 2. 启动开发环境 (Start development server)
 
-```bash
+\`\`\`bash
 pnpm dev
-```
+\`\`\`
 
 ### 3. 构建生产环境 (Build for production)
 
-```bash
+\`\`\`bash
 pnpm build
-```
+\`\`\`
 
 ### 4. 启动生产环境 (Start production server)
 
-```bash
+\`\`\`bash
 pnpm start
-```
+\`\`\`
 
 ---
 
 ## 目录结构 (Directory Structure)
 
-```
+\`\`\`
 ├── app/                # 各类工具页面 (Tool pages)
 ├── components/         # 可复用组件 (Reusable components)
 ├── hooks/              # 自定义 hooks (Custom hooks)
@@ -94,7 +94,7 @@ pnpm start
 ├── tailwind.config.ts  # Tailwind CSS 配置 (Tailwind config)
 ├── next.config.mjs     # Next.js 配置 (Next.js config)
 └── ...
-```
+\`\`\`
 
 ---
 
