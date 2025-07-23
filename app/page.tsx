@@ -17,6 +17,8 @@ import {
   Cpu,
   Hash,
   Monitor,
+  Heart,
+  Github,
 } from "lucide-react"
 
 export default function Home() {
@@ -151,34 +153,80 @@ export default function Home() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="max-w-7xl mx-auto p-6">
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold mb-2">在线工具箱</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            免费、快速、易用的在线工具集合，无需安装，即开即用，提高您的工作效率
-          </p>
-          <div className="mt-2 text-sm text-gray-500">由 AI 自动生成</div>
-        </header>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
+      {/* 主要内容区域 */}
+      <div className="flex-1">
+        <div className="max-w-7xl mx-auto p-6">
+          <header className="mb-8 text-center">
+            <h1 className="text-3xl font-bold mb-2">在线工具箱</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              免费、快速、易用的在线工具集合，无需安装，即开即用，提高您的工作效率
+            </p>
+            <div className="mt-2 text-sm text-gray-500">由 V0.dev 自动生成</div>
+          </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {tools.map((tool) => (
-            <Link
-              key={tool.href}
-              href={tool.href}
-              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col h-24"
-            >
-              <div className="flex items-center mb-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tool.color} flex-shrink-0`}>
-                  {tool.icon}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {tools.map((tool) => (
+              <Link
+                key={tool.href}
+                href={tool.href}
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 flex flex-col h-24"
+              >
+                <div className="flex items-center mb-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${tool.color} flex-shrink-0`}>
+                    {tool.icon}
+                  </div>
+                  <h2 className="ml-3 font-medium text-sm leading-tight">{tool.name}</h2>
                 </div>
-                <h2 className="ml-3 font-medium text-sm leading-tight">{tool.name}</h2>
-              </div>
-              <p className="text-gray-500 text-xs leading-tight truncate flex-1">{tool.description}</p>
-            </Link>
-          ))}
+                <p className="text-gray-500 text-xs leading-tight truncate flex-1">{tool.description}</p>
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white/80 backdrop-blur-sm border-t border-gray-200 mt-8">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Made with</span>
+              <Heart className="w-4 h-4 text-red-500 fill-current" />
+              <span>by v0.dev</span>
+            </div>
+
+            <div className="flex items-center gap-6 text-sm text-gray-600">
+              <span>© 2024 在线工具箱</span>
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://github.com/lixiaofei123/toolbox_web"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-gray-900 transition-colors"
+                >
+                  <Github className="w-4 h-4" />
+                  <span>GitHub</span>
+                </a>
+              </div>
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://cnb.cool/xiaofei/toolbox_web"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-gray-900 transition-colors"
+                >
+                  <img src="https://docs.cnb.cool/images/logo/svg/LogoMonochromeIcon.svg" />
+                  <span>CNB</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-gray-100 text-center text-xs text-gray-500">
+            <p>本工具箱完全在浏览器本地运行，不会上传或存储您的任何数据，保护您的隐私安全</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
