@@ -41,7 +41,7 @@ function generateUUIDWithoutHyphens(version: string): string {
   return uuid.replace(/-/g, "")
 }
 
-// 大写UUID生成
+// ���写UUID生成
 function generateUppercaseUUID(version: string): string {
   const uuid = version === "v4" ? generateUUIDv4() : generateUUIDv1()
   return uuid.toUpperCase()

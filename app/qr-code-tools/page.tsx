@@ -614,7 +614,7 @@ export default function QrCodeTools() {
                           <FileImage className="w-12 h-12 mx-auto mb-2 text-gray-400" />
                           <p className="font-medium">上传包含二维码的图片</p>
                           <p className="text-sm mt-1">支持 JPG、PNG、GIF、WebP 等格式</p>
-                          <p className="text-xs mt-2 text-gray-400">建议上传清晰、完整的二维码图片以获得最佳识别效果</p>
+                          <p className="text-xs mt-2 text-gray-400">建议上传清晰、完整的二维码图片以获得最佳识别���果</p>
                         </div>
                       </div>
                     )}
