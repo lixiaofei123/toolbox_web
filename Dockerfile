@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci --only=production
+RUN npm install
 
 # 复制源代码
 COPY . .
@@ -18,31 +18,19 @@ COPY . .
 RUN npm run build
 
 # 第二阶段：生产阶段
-FROM nginx:alpine AS production
+FROM node:18-alpine AS production
 
-# 安装必要的工具
-RUN apk add --no-cache curl
-
-# 复制自定义 nginx 配置
-COPY nginx.conf /etc/nginx/nginx.conf
+# 安装 http-server
+RUN npm install http-server -g
 
 # 从构建阶段复制构建产物
-COPY --from=builder /app/out /usr/share/nginx/html
+COPY --from=builder /app/out /html
 
-# 创建健康检查脚本
-RUN echo '#!/bin/sh' > /usr/local/bin/healthcheck.sh && \
-    echo 'curl -f http://localhost/health || exit 1' >> /usr/local/bin/healthcheck.sh && \
-    chmod +x /usr/local/bin/healthcheck.sh
-
-# 创建健康检查页面
-RUN echo '{"status":"ok","timestamp":"'$(date -Iseconds)'"}' > /usr/share/nginx/html/health
-
-# 设置健康检查
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD /usr/local/bin/healthcheck.sh
+# 设置工作目录
+WORKDIR /html 
 
 # 暴露端口
-EXPOSE 80
+EXPOSE 8080
 
 # 启动 nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["http-server", "."]

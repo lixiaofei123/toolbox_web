@@ -1,11 +1,24 @@
 # 在线工具箱 (Online Toolbox)
 
-体验链接[点击这里](https://tool.lixf.ink/)
+<div align="center">
 
+**集成多种实用开发工具，保护您的隐私安全**  
+**Integrated practical developer tools with privacy protection**
+
+[![Next.js](https://img.shields.io/badge/Next.js-13-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)](https://reactjs.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+**[🚀 立即体验 | Try it now](https://tool.lixf.ink/)**
+
+</div>
 
 > 本项目由 AI 生成，基于 Next.js + React + TypeScript 构建，集成多种实用开发者工具，所有功能均在本地浏览器端运行，保护您的隐私。
 > 
 > This project is AI-generated, built with Next.js + React + TypeScript, and integrates a variety of practical developer tools. All features run locally in your browser to protect your privacy.
+
+
 
 ---
 
@@ -17,36 +30,30 @@ This is a feature-rich online toolbox designed for developers and everyday users
 
 ---
 
-## 功能列表 (Features)
+## 首页预览
 
-### 🔄 编码转换工具 (Encoding & Conversion Tools)
-- **Base64 转换器** (Base64 Converter): 图片与Base64字符串互转 | Image & Base64 string conversion
-- **URL 编码器** (URL Encoder): URL编码解码工具 | Encode & decode URLs
-- **时间戳转换器** (Timestamp Converter): 时间戳与日期时间互转 | Timestamp & datetime conversion
+![首页](images/index.png)
 
-### 🖼️ 图片处理工具 (Image Processing Tools)
-- **图片格式转换器** (Image Converter): JPG/PNG/WebP/GIF 格式互转 | JPG/PNG/WebP/GIF conversion
-- **图片编辑器** (Image Editor): 剪裁、调整尺寸和比例 | Crop, resize, aspect ratio
-- **颜色取色器** (Color Picker): 从图片中精确提取颜色值 | Extract colors from images precisely
+---
 
-### 🎨 颜色工具 (Color Tools)
-- **颜色转换器** (Color Converter): HEX/RGB/HSL 颜色格式互转 | HEX/RGB/HSL conversion
+## 快速部署
 
-### 🔐 安全工具 (Security Tools)
-- **哈希值生成器** (Hash Generator): MD5/SHA-1/SHA-256/SHA-384/SHA-512 哈希值生成 | Generate hash values with multiple algorithms
-- **密码生成器** (Password Generator): 生成安全的随机密码 | Generate secure random passwords
-- **JWT 解析器** (JWT Parser): 解析JWT token和验证签名 | Parse & verify JWT tokens
-- **UUID 生成器** (UUID Generator): 批量生成唯一标识符 | Batch generate UUIDs
+Delpoy
 
-### 📝 文本处理工具 (Text Processing Tools)
-- **JSON 格式化器** (JSON Formatter): JSON美化、压缩、格式验证 | Beautify, minify, validate JSON
-- **正则表达式测试器** (Regex Tester): 验证正则表达式语法，测试匹配结果 | Test regex syntax & matches
-- **文本差异对比器** (Text Diff): 对比两段文本的差异 | Compare text differences
-- **文本搜索替换器** (Text Search Replace): 批量搜索替换文本内容 | Batch search and replace text
+### Docker部署
 
-### 🛠️ 开发工具 (Development Tools)
-- **二维码工具** (QR Code Tools): 生成和识别二维码 | Generate & scan QR codes
-- **Cron 表达式生成器** (Cron Generator): 生成和分析Cron表达式 | Generate & analyze cron expressions
+```
+docker run -d -p 8080:8080 mrlee326/toolbox_web:latest
+```
+
+
+中国用户
+
+Chinese User
+
+```
+docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
+```
 
 ---
 
