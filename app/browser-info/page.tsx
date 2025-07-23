@@ -1,15 +1,14 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Monitor, Smartphone, Cpu, Globe, Shield, Copy, RefreshCw, Eye, MapPin, Wifi } from "lucide-react"
+import { Monitor, Smartphone, Cpu, Globe, Shield, Copy, RefreshCw, Eye, MapPin, Wifi, Home } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 interface BrowserInfo {
   // 基本信息
@@ -344,23 +343,11 @@ export default function BrowserInfoPage() {
       })
   }
 
-  const InfoCard = ({ title, icon: Icon, children }: { title: string; icon: any; children: React.ReactNode }) => (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Icon className="w-5 h-5" />
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">{children}</CardContent>
-    </Card>
-  )
-
   const InfoRow = ({ label, value, copyable = false }: { label: string; value: string; copyable?: boolean }) => (
-    <div className="flex justify-between items-center py-1">
+    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
       <span className="text-sm text-gray-600 font-medium">{label}</span>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded text-right max-w-xs truncate">{value}</span>
+        <span className="text-sm font-mono bg-gray-50 px-2 py-1 rounded text-right max-w-xs truncate">{value}</span>
         {copyable && (
           <Button variant="ghost" size="sm" onClick={() => copyToClipboard(value, label)} className="h-6 w-6 p-0">
             <Copy className="w-3 h-3" />
@@ -370,191 +357,298 @@ export default function BrowserInfoPage() {
     </div>
   )
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">浏览器信息检测</h1>
-            <p className="text-gray-600">正在检测您的浏览器信息...</p>
-          </div>
-          <div className="flex justify-center">
-            <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!browserInfo) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-3xl font-bold mb-4">浏览器信息检测</h1>
-          <p className="text-gray-600 mb-4">无法获取浏览器信息</p>
-          <Button onClick={getBrowserInfo}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            重新检测
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">浏览器信息检测</h1>
-          <p className="text-gray-600 mb-4">检测您的浏览器、操作系统、硬件信息并生成浏览器指纹</p>
-          <Button onClick={getBrowserInfo} variant="outline">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            重新检测
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header */}
+      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/">
+                <Button variant="ghost" size="sm">
+                  <Home className="w-4 h-4 mr-2" />
+                  返回首页
+                </Button>
+              </Link>
+              <Separator orientation="vertical" className="h-6" />
+              <div className="flex items-center gap-2">
+                <Monitor className="w-5 h-5 text-blue-600" />
+                <h1 className="text-xl font-bold text-gray-900">浏览器信息检测</h1>
+              </div>
+            </div>
+            <Badge variant="secondary">
+              <Eye className="w-3 h-3 mr-1" />
+              系统检测
+            </Badge>
+          </div>
         </div>
+      </header>
 
-        <Tabs defaultValue="basic" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="basic">基本信息</TabsTrigger>
-            <TabsTrigger value="hardware">硬件信息</TabsTrigger>
-            <TabsTrigger value="features">浏览器功能</TabsTrigger>
-            <TabsTrigger value="network">网络信息</TabsTrigger>
-            <TabsTrigger value="fingerprint">浏览器指纹</TabsTrigger>
-          </TabsList>
-
-          {/* 基本信息 */}
-          <TabsContent value="basic" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoCard title="浏览器信息" icon={Globe}>
-                <InfoRow label="浏览器" value={`${browserInfo.browser.name} ${browserInfo.browser.version}`} />
-                <InfoRow label="内核" value={browserInfo.browser.engine} />
-                <InfoRow label="User Agent" value={browserInfo.userAgent} copyable />
-              </InfoCard>
-
-              <InfoCard title="操作系统" icon={Monitor}>
-                <InfoRow label="系统" value={`${browserInfo.os.name} ${browserInfo.os.version}`} />
-                <InfoRow label="架构" value={browserInfo.os.architecture} />
-                <InfoRow label="平台" value={browserInfo.hardware.platform} />
-              </InfoCard>
-
-              <InfoCard title="设备信息" icon={Smartphone}>
-                <InfoRow label="设备类型" value={browserInfo.device.type} />
-                <InfoRow label="厂商" value={browserInfo.device.vendor} />
-                <InfoRow label="触摸点" value={browserInfo.hardware.maxTouchPoints.toString()} />
-              </InfoCard>
-
-              <InfoCard title="语言和时区" icon={MapPin}>
-                <InfoRow label="语言" value={browserInfo.locale.language} />
-                <InfoRow label="时区" value={browserInfo.locale.timezone} />
-                <InfoRow label="时区偏移" value={`${browserInfo.locale.timezoneOffset} 分钟`} />
-                <div className="pt-2">
-                  <span className="text-sm text-gray-600 font-medium">支持语言</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {browserInfo.locale.languages.map((lang, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {lang}
-                      </Badge>
-                    ))}
-                  </div>
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 gap-6">
+          {loading ? (
+            <Card>
+              <CardContent className="flex items-center justify-center py-12">
+                <div className="text-center">
+                  <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
+                  <p className="text-gray-600">正在检测浏览器信息...</p>
                 </div>
-              </InfoCard>
-            </div>
-          </TabsContent>
-
-          {/* 硬件信息 */}
-          <TabsContent value="hardware" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoCard title="处理器信息" icon={Cpu}>
-                <InfoRow label="CPU 核心数" value={browserInfo.hardware.cpuCores.toString()} />
-                <InfoRow
-                  label="内存"
-                  value={browserInfo.hardware.memory ? `${browserInfo.hardware.memory} GB` : "未知"}
-                />
-              </InfoCard>
-
-              <InfoCard title="屏幕信息" icon={Monitor}>
-                <InfoRow label="屏幕分辨率" value={`${browserInfo.screen.width} × ${browserInfo.screen.height}`} />
-                <InfoRow
-                  label="可用分辨率"
-                  value={`${browserInfo.screen.availWidth} × ${browserInfo.screen.availHeight}`}
-                />
-                <InfoRow label="颜色深度" value={`${browserInfo.screen.colorDepth} 位`} />
-                <InfoRow label="像素深度" value={`${browserInfo.screen.pixelDepth} 位`} />
-                <InfoRow label="设备像素比" value={browserInfo.screen.devicePixelRatio.toString()} />
-              </InfoCard>
-            </div>
-          </TabsContent>
-
-          {/* 浏览器功能 */}
-          <TabsContent value="features" className="space-y-6">
-            <InfoCard title="浏览器功能支持" icon={Shield}>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {Object.entries(browserInfo.features).map(([feature, supported]) => (
-                  <div key={feature} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span className="text-sm font-medium capitalize">{feature.replace(/([A-Z])/g, " $1").trim()}</span>
-                    <Badge variant={supported ? "default" : "secondary"}>{supported ? "支持" : "不支持"}</Badge>
-                  </div>
-                ))}
-              </div>
-            </InfoCard>
-          </TabsContent>
-
-          {/* 网络信息 */}
-          <TabsContent value="network" className="space-y-6">
-            <InfoCard title="网络连接信息" icon={Wifi}>
-              <InfoRow label="连接类型" value={browserInfo.network.connection || "未知"} />
-              <InfoRow label="有效连接类型" value={browserInfo.network.effectiveType || "未知"} />
-              <InfoRow
-                label="下行速度"
-                value={browserInfo.network.downlink ? `${browserInfo.network.downlink} Mbps` : "未知"}
-              />
-              <InfoRow label="往返时间" value={browserInfo.network.rtt ? `${browserInfo.network.rtt} ms` : "未知"} />
-            </InfoCard>
-          </TabsContent>
-
-          {/* 浏览器指纹 */}
-          <TabsContent value="fingerprint" className="space-y-6">
-            <InfoCard title="浏览器指纹" icon={Eye}>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">指纹哈希值</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(browserInfo.fingerprint, "浏览器指纹")}
-                    >
-                      <Copy className="w-4 h-4 mr-2" />
-                      复制
-                    </Button>
-                  </div>
-                  <div className="p-3 bg-gray-100 rounded font-mono text-sm break-all">{browserInfo.fingerprint}</div>
+              </CardContent>
+            </Card>
+          ) : !browserInfo ? (
+            <Card>
+              <CardContent className="text-center py-12">
+                <p className="text-gray-600 mb-4">无法获取浏览器信息</p>
+                <Button onClick={getBrowserInfo}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  重新检测
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>浏览器详细信息</CardTitle>
+                  <Button onClick={getBrowserInfo} variant="outline" size="sm">
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    重新检测
+                  </Button>
                 </div>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="basic" className="space-y-6">
+                  <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="basic">基本信息</TabsTrigger>
+                    <TabsTrigger value="hardware">硬件信息</TabsTrigger>
+                    <TabsTrigger value="features">浏览器功能</TabsTrigger>
+                    <TabsTrigger value="network">网络信息</TabsTrigger>
+                    <TabsTrigger value="fingerprint">浏览器指纹</TabsTrigger>
+                  </TabsList>
 
-                <Separator />
+                  {/* 基本信息 */}
+                  <TabsContent value="basic" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <Globe className="w-5 h-5" />
+                            浏览器信息
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow
+                            label="浏览器"
+                            value={`${browserInfo.browser.name} ${browserInfo.browser.version}`}
+                          />
+                          <InfoRow label="内核" value={browserInfo.browser.engine} />
+                          <InfoRow label="User Agent" value={browserInfo.userAgent} copyable />
+                        </CardContent>
+                      </Card>
 
-                <div className="text-sm text-gray-600 space-y-2">
-                  <p>
-                    <strong>什么是浏览器指纹？</strong>
-                  </p>
-                  <p>浏览器指纹是通过收集浏览器和设备的各种特征信息生成的唯一标识符，包括：</p>
-                  <ul className="list-disc list-inside space-y-1 ml-4">
-                    <li>User Agent 字符串</li>
-                    <li>屏幕分辨率和颜色深度</li>
-                    <li>时区和语言设置</li>
-                    <li>已安装的插件和字体</li>
-                    <li>Canvas 和 WebGL 渲染特征</li>
-                    <li>硬件信息（CPU核心数等）</li>
-                  </ul>
-                  <p className="text-amber-600">
-                    <strong>提示：</strong>不同的浏览器指纹算法生成的结果不一致
-                  </p>
-                </div>
-              </div>
-            </InfoCard>
-          </TabsContent>
-        </Tabs>
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <Monitor className="w-5 h-5" />
+                            操作系统
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow label="系统" value={`${browserInfo.os.name} ${browserInfo.os.version}`} />
+                          <InfoRow label="架构" value={browserInfo.os.architecture} />
+                          <InfoRow label="平台" value={browserInfo.hardware.platform} />
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <Smartphone className="w-5 h-5" />
+                            设备信息
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow label="设备类型" value={browserInfo.device.type} />
+                          <InfoRow label="厂商" value={browserInfo.device.vendor} />
+                          <InfoRow label="触摸点" value={browserInfo.hardware.maxTouchPoints.toString()} />
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <MapPin className="w-5 h-5" />
+                            语言和时区
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow label="语言" value={browserInfo.locale.language} />
+                          <InfoRow label="时区" value={browserInfo.locale.timezone} />
+                          <InfoRow label="时区偏移" value={`${browserInfo.locale.timezoneOffset} 分钟`} />
+                          <div className="pt-2">
+                            <span className="text-sm text-gray-600 font-medium">支持语言</span>
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {browserInfo.locale.languages.map((lang, index) => (
+                                <Badge key={index} variant="secondary" className="text-xs">
+                                  {lang}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+
+                  {/* 硬件信息 */}
+                  <TabsContent value="hardware" className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <Cpu className="w-5 h-5" />
+                            处理器信息
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow label="CPU 核心数" value={browserInfo.hardware.cpuCores.toString()} />
+                          <InfoRow
+                            label="内存"
+                            value={browserInfo.hardware.memory ? `${browserInfo.hardware.memory} GB` : "未知"}
+                          />
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="flex items-center gap-2 text-lg">
+                            <Monitor className="w-5 h-5" />
+                            屏幕信息
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <InfoRow
+                            label="屏幕分辨率"
+                            value={`${browserInfo.screen.width} × ${browserInfo.screen.height}`}
+                          />
+                          <InfoRow
+                            label="可用分辨率"
+                            value={`${browserInfo.screen.availWidth} × ${browserInfo.screen.availHeight}`}
+                          />
+                          <InfoRow label="颜色深度" value={`${browserInfo.screen.colorDepth} 位`} />
+                          <InfoRow label="像素深度" value={`${browserInfo.screen.pixelDepth} 位`} />
+                          <InfoRow label="设备像素比" value={browserInfo.screen.devicePixelRatio.toString()} />
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </TabsContent>
+
+                  {/* 浏览器功能 */}
+                  <TabsContent value="features" className="space-y-6">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Shield className="w-5 h-5" />
+                          浏览器功能支持
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {Object.entries(browserInfo.features).map(([feature, supported]) => (
+                            <div key={feature} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <span className="text-sm font-medium capitalize">
+                                {feature.replace(/([A-Z])/g, " $1").trim()}
+                              </span>
+                              <Badge variant={supported ? "default" : "secondary"}>
+                                {supported ? "支持" : "不支持"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* 网络信息 */}
+                  <TabsContent value="network" className="space-y-6">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Wifi className="w-5 h-5" />
+                          网络连接信息
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <InfoRow label="连接类型" value={browserInfo.network.connection || "未知"} />
+                        <InfoRow label="有效连接类型" value={browserInfo.network.effectiveType || "未知"} />
+                        <InfoRow
+                          label="下行速度"
+                          value={browserInfo.network.downlink ? `${browserInfo.network.downlink} Mbps` : "未知"}
+                        />
+                        <InfoRow
+                          label="往返时间"
+                          value={browserInfo.network.rtt ? `${browserInfo.network.rtt} ms` : "未知"}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* 浏览器指纹 */}
+                  <TabsContent value="fingerprint" className="space-y-6">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <Eye className="w-5 h-5" />
+                          浏览器指纹
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-600">指纹哈希值</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(browserInfo.fingerprint, "浏览器指纹")}
+                            >
+                              <Copy className="w-4 h-4 mr-2" />
+                              复制
+                            </Button>
+                          </div>
+                          <div className="p-3 bg-gray-50 rounded-lg font-mono text-sm break-all border">
+                            {browserInfo.fingerprint}
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="text-sm text-gray-600 space-y-3">
+                          <div>
+                            <h4 className="font-semibold text-gray-900 mb-2">什么是浏览器指纹？</h4>
+                            <p>浏览器指纹是通过收集浏览器和设备的各种特征信息生成的唯一标识符，包括：</p>
+                          </div>
+                          <ul className="list-disc list-inside space-y-1 ml-4">
+                            <li>User Agent 字符串</li>
+                            <li>屏幕分辨率和颜色深度</li>
+                            <li>时区和语言设置</li>
+                            <li>已安装的插件和字体</li>
+                            <li>Canvas 和 WebGL 渲染特征</li>
+                            <li>硬件信息（CPU核心数等）</li>
+                          </ul>
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                            <p className="text-amber-800">
+                              <strong>提示：</strong>不同的浏览器指纹算法可能生成不同的结果，此工具仅供参考和学习使用。
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   )
