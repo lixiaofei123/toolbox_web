@@ -1,7 +1,7 @@
 main:
   push:
     - imports: 
-        - hhttps://cnb.cool/xiaofei/secrets/-/blob/main/github.yml
+        - https://cnb.cool/xiaofei/secrets/-/blob/main/github.yml
       stages:
         - name: sync to github
           image: tencentcom/git-sync
