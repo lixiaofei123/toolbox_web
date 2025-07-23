@@ -3,16 +3,14 @@
 import { useState, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { ArrowLeft, Search, Replace, Copy, RotateCcw, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Search, Replace, Copy, RotateCcw, AlertCircle, CheckCircle2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 export default function TextSearchReplacePage() {
@@ -22,11 +20,13 @@ export default function TextSearchReplacePage() {
   const [caseSensitive, setCaseSensitive] = useState(false)
   const [useRegex, setUseRegex] = useState(false)
   const [activeTab, setActiveTab] = useState("search")
-  const [showPreview, setShowPreview] = useState(false)
+  const [replacedText, setReplacedText] = useState("")
+  const [hasReplaced, setHasReplaced] = useState(false)
 
   // 搜索结果
   const searchResults = useMemo(() => {
-    if (!text || !searchTerm) return { count: 0, highlightedText: text }
+    const targetText = hasReplaced ? replacedText : text
+    if (!targetText || !searchTerm) return { count: 0, highlightedText: targetText }
 
     try {
       let regex: RegExp
@@ -39,20 +39,20 @@ export default function TextSearchReplacePage() {
         regex = new RegExp(escapedTerm, flags)
       }
 
-      const matches = text.match(regex)
+      const matches = targetText.match(regex)
       const count = matches ? matches.length : 0
 
       // 高亮显示匹配的文本
-      const highlightedText = text.replace(
+      const highlightedText = targetText.replace(
         regex,
         (match) => `<mark class="bg-yellow-200 text-yellow-900 px-1 rounded">${match}</mark>`,
       )
 
       return { count, highlightedText }
     } catch (error) {
-      return { count: 0, highlightedText: text, error: "正则表达式语法错误" }
+      return { count: 0, highlightedText: targetText, error: "正则表达式语法错误" }
     }
-  }, [text, searchTerm, caseSensitive, useRegex])
+  }, [text, replacedText, hasReplaced, searchTerm, caseSensitive, useRegex])
 
   // 替换预览
   const replacePreview = useMemo(() => {
@@ -69,7 +69,6 @@ export default function TextSearchReplacePage() {
         regex = new RegExp(escapedTerm, flags)
       }
 
-      // 直接使用替换内容，不处理 \\n
       return text.replace(regex, replaceTerm)
     } catch (error) {
       return text
@@ -85,10 +84,11 @@ export default function TextSearchReplacePage() {
       return
     }
 
-    setText(replacePreview)
+    setReplacedText(replacePreview)
+    setHasReplaced(true)
     toast({
       title: "替换完成",
-      description: `已完成文本替换操作`,
+      description: `已完成文本替换操作，原文本保持不变`,
     })
   }
 
@@ -114,7 +114,8 @@ export default function TextSearchReplacePage() {
     setReplaceTerm("")
     setCaseSensitive(false)
     setUseRegex(false)
-    setShowPreview(false)
+    setReplacedText("")
+    setHasReplaced(false)
     toast({
       title: "已重置",
       description: "所有内容已清空",
@@ -139,7 +140,7 @@ export default function TextSearchReplacePage() {
 
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
-  }, [searchTerm]) // Removed handleReplace from dependencies
+  }, [searchTerm])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -176,7 +177,7 @@ export default function TextSearchReplacePage() {
                   <Search className="w-5 h-5" />
                   文本输入
                 </CardTitle>
-                <CardDescription>在此输入要处理的文本内容</CardDescription>
+                <CardDescription>在此输入要处理的文本内容（原文本不会被修改）</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Textarea
@@ -202,12 +203,13 @@ export default function TextSearchReplacePage() {
                 {/* 搜索输入 */}
                 <div className="space-y-2">
                   <Label htmlFor="search">搜索内容</Label>
-                  <Input
+                  <Textarea
                     id="search"
                     placeholder="输入要搜索的内容..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="font-mono"
+                    className="font-mono min-h-[60px]"
+                    rows={2}
                   />
                 </div>
 
@@ -216,13 +218,12 @@ export default function TextSearchReplacePage() {
                   <Label htmlFor="replace">替换内容</Label>
                   <Textarea
                     id="replace"
-                    placeholder="输入替换后的内容... (可直接按回车输入换行)"
+                    placeholder="输入替换后的内容..."
                     value={replaceTerm}
                     onChange={(e) => setReplaceTerm(e.target.value)}
-                    className="font-mono min-h-[80px]"
-                    rows={3}
+                    className="font-mono min-h-[60px]"
+                    rows={2}
                   />
-                  <p className="text-xs text-gray-500">提示：可直接按回车键输入换行符</p>
                 </div>
 
                 <Separator />
@@ -262,92 +263,45 @@ export default function TextSearchReplacePage() {
 
           {/* 右侧：结果显示 */}
           <div className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="search" className="flex items-center gap-2">
-                  <Search className="w-4 h-4" />
-                  搜索结果
-                </TabsTrigger>
-                <TabsTrigger value="replace" className="flex items-center gap-2">
-                  <Replace className="w-4 h-4" />
-                  替换预览
-                </TabsTrigger>
-              </TabsList>
-
-              {/* 搜索结果 */}
-              <TabsContent value="search">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Search className="w-5 h-5" />
-                        搜索结果
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        {searchResults.count > 0 && (
-                          <Badge variant="secondary">找到 {searchResults.count} 个匹配</Badge>
-                        )}
-                        <Button variant="outline" size="sm" onClick={() => handleCopy(text)}>
-                          <Copy className="w-4 h-4 mr-1" />
-                          复制
-                        </Button>
-                      </div>
+            {/* 搜索结果 */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Search className="w-5 h-5" />
+                    {hasReplaced ? "替换结果" : "搜索结果"}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {searchResults.count > 0 && <Badge variant="secondary">找到 {searchResults.count} 个匹配</Badge>}
+                    {hasReplaced && <Badge variant="default">已替换</Badge>}
+                    <Button variant="outline" size="sm" onClick={() => handleCopy(hasReplaced ? replacedText : text)}>
+                      <Copy className="w-4 h-4 mr-1" />
+                      复制
+                    </Button>
+                  </div>
+                </div>
+                {searchResults.error && (
+                  <div className="flex items-center gap-2 text-red-600 text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    {searchResults.error}
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[400px] w-full rounded border p-4">
+                  {searchTerm ? (
+                    <div
+                      className="whitespace-pre-wrap font-mono text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: searchResults.highlightedText }}
+                    />
+                  ) : (
+                    <div className="text-gray-500 text-center py-8">
+                      {hasReplaced ? "替换结果将在此显示" : "请输入搜索内容以查看结果"}
                     </div>
-                    {searchResults.error && (
-                      <div className="flex items-center gap-2 text-red-600 text-sm">
-                        <AlertCircle className="w-4 h-4" />
-                        {searchResults.error}
-                      </div>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[400px] w-full rounded border p-4">
-                      {searchTerm ? (
-                        <div
-                          className="whitespace-pre-wrap font-mono text-sm leading-relaxed"
-                          dangerouslySetInnerHTML={{ __html: searchResults.highlightedText }}
-                        />
-                      ) : (
-                        <div className="text-gray-500 text-center py-8">请输入搜索内容以查看结果</div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* 替换预览 */}
-              <TabsContent value="replace">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2">
-                        <Replace className="w-5 h-5" />
-                        替换预览
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
-                          {showPreview ? <EyeOff className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
-                          {showPreview ? "隐藏" : "显示"}差异
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleCopy(replacePreview)}>
-                          <Copy className="w-4 h-4 mr-1" />
-                          复制
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[400px] w-full rounded border p-4">
-                      {searchTerm ? (
-                        <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">{replacePreview}</div>
-                      ) : (
-                        <div className="text-gray-500 text-center py-8">请输入搜索内容以查看替换预览</div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
 
             {/* 使用说明 */}
             <Card>
@@ -359,6 +313,9 @@ export default function TextSearchReplacePage() {
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-gray-600">
                 <p>
+                  • <strong>原文本保护</strong>：原始文本不会被修改，替换结果单独显示
+                </p>
+                <p>
                   • <strong>精确匹配</strong>：默认模式，完全匹配搜索内容
                 </p>
                 <p>
@@ -368,13 +325,16 @@ export default function TextSearchReplacePage() {
                   • <strong>正则表达式</strong>：支持使用正则表达式进行高级搜索
                 </p>
                 <p>
-                  • <strong>换行支持</strong>：可搜索 \n 并用实际换行符替换
+                  • <strong>换行符支持</strong>：支持搜索和替换换行符及 \n 字符
+                </p>
+                <p>
+                  • <strong>多行输入</strong>：搜索和替换框都支持多行文本输入
                 </p>
                 <p>
                   • <strong>快捷键</strong>：Ctrl+F 聚焦搜索，Ctrl+H 执行替换
                 </p>
                 <p>
-                  • <strong>实时预览</strong>：在替换预览中查看替换后的效果
+                  • <strong>实时搜索</strong>：输入搜索内容后立即显示匹配结果
                 </p>
               </CardContent>
             </Card>
