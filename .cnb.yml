@@ -1,3 +1,10 @@
+$:
+  vscode:
+    - docker:
+        image: docker.cnb.cool/examples/language/node-22
+      services:
+        - vscode
+        - docker
 main:
   push:
     - imports: 
