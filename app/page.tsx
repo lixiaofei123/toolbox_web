@@ -16,6 +16,7 @@ import {
   Layers,
   Cpu,
   Hash,
+  Monitor,
 } from "lucide-react"
 
 export default function Home() {
@@ -139,6 +140,13 @@ export default function Home() {
       href: "/color-picker",
       icon: <Pipette className="w-4 h-4" />,
       color: "bg-amber-100 text-amber-600",
+    },
+    {
+      name: "浏览器信息",
+      description: "检测浏览器信息和生成浏览器指纹",
+      href: "/browser-info",
+      icon: <Monitor className="w-4 h-4" />,
+      color: "bg-slate-100 text-slate-600",
     },
   ]
 
