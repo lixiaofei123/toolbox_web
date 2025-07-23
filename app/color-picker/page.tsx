@@ -396,7 +396,7 @@ export default function ColorPickerPage() {
                   <div className="flex flex-col gap-4">
                     <div
                       className="border-2 border-gray-200 rounded-lg bg-white shadow-sm p-2"
-                      style={{ width: "156px" }}
+                      style={{ width: "170px" }}
                     >
                       <div className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
                         <Eye className="w-4 h-4" />
@@ -412,7 +412,7 @@ export default function ColorPickerPage() {
                     {/* 鼠标位置信息 */}
                     <div
                       className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm"
-                      style={{ width: "156px" }}
+                      style={{ width: "170px" }}
                     >
                       <div className="text-sm font-medium text-gray-700 mb-2">位置信息</div>
                       <div className="text-xs text-gray-600 space-y-1">
@@ -441,7 +441,7 @@ export default function ColorPickerPage() {
                     <div className="space-y-2">
                       <Label>颜色预览</Label>
                       <div
-                        className="w-full h-16 rounded-lg border-2 border-gray-200 shadow-inner"
+                        className="w-full h-10 rounded-lg border-2 border-gray-200 shadow-inner"
                         style={{ backgroundColor: colorInfo.hex }}
                       />
                     </div>
