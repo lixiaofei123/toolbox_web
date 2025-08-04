@@ -173,35 +173,9 @@ export default function JsonYamlConverter() {
             <CardContent className="space-y-4">
               <Textarea
                 placeholder={`{
-  "name": "示例项目",
-  "version": "1.0.0",
-  "dependencies": {
-    "react": "^18.0.0",
-    "typescript": "^4.9.0"
-  },
-  "scripts": ["build", "test", "deploy"],
-  "config": {
-    "port": 3000,
-    "debug": true
-  },
-  "nestedArray": [
-    {
-      "id": 1,
-      "value": "first"
-    },
-    {
-      "id": 2,
-      "value": "second"
-    }
-  ],
-  "rootArrayExample": [
-    "itemA",
-    "itemB",
-    {
-      "keyC": "valueC"
-    }
-  ]
-}`}
+  "name": "示例项目"
+}`
+  }
                 value={jsonInput}
                 onChange={(e) => {
                   setJsonInput(e.target.value)
@@ -233,27 +207,7 @@ export default function JsonYamlConverter() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
-                placeholder={`name: "示例项目"
-version: "1.0.0"
-dependencies:
-  react: "^18.0.0"
-  typescript: "^4.9.0"
-scripts:
-  - build
-  - test
-  - deploy
-config:
-  port: 3000
-  debug: true
-nestedArray:
-  - id: 1
-    value: first
-  - id: 2
-    value: second
-rootArrayExample:
-  - itemA
-  - itemB
-  - keyC: valueC`}
+                placeholder={`name: "示例项目"`}
                 value={yamlInput}
                 onChange={(e) => {
                   setYamlInput(e.target.value)
