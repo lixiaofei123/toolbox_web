@@ -54,6 +54,7 @@ export default function ImageEditor() {
   const [error, setError] = useState("")
   const [hasEditedImage, setHasEditedImage] = useState(false)
   const [cropBoxReady, setCropBoxReady] = useState(false) // State to control crop box visibility
+  const [history, setHistory] = useState<string[]>([]) // New state for operation history
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
@@ -103,7 +104,7 @@ export default function ImageEditor() {
 
       setSelectedRatio("free") // 确保比例重置为自由比例
       setError("") // 清除任何之前的错误
-      setHasEditedImage(false) // 上传新图片或编辑后图片加载时重置编辑标志
+      // setHasEditedImage(false); // This should be handled by specific operations (crop/resize) or clearAll
 
       // 使用 requestAnimationFrame 延迟设置 cropBoxReady，确保 DOM 布局完成
       requestAnimationFrame(() => {
@@ -134,6 +135,8 @@ export default function ImageEditor() {
       setCropArea({ x: 0, y: 0, width: 0, height: 0 })
       setSelectedRatio("free") // 重置比例
       setCropBoxReady(false) // 重置裁剪框准备状态
+      setHasEditedImage(false) // 上传新图片时，尚未编辑
+      setHistory([]) // 清空历史记录
     }
     reader.readAsDataURL(file)
   }
@@ -312,7 +315,6 @@ export default function ImageEditor() {
         newArea.x = dragStart.cropX + deltaX
         newArea.width = dragStart.cropWidth - deltaX
         break
-        break
       case "e":
         newArea.width = dragStart.cropWidth + deltaX
         break
@@ -368,9 +370,12 @@ export default function ImageEditor() {
 
         const croppedDataUrl = canvas.toDataURL("image/png", 1.0)
 
+        // 更新历史记录 (不再限制数量)
+        setHistory((prevHistory) => [...prevHistory, croppedDataUrl])
+
         // 直接替换原图，这将触发 img 的 onLoad 事件，自动重新初始化裁剪框
         setOriginalImage(croppedDataUrl)
-        setHasEditedImage(true)
+        setHasEditedImage(true) // 标记为已编辑
 
         toast({
           title: "剪裁成功",
@@ -428,9 +433,12 @@ export default function ImageEditor() {
 
         const resizedDataUrl = canvas.toDataURL("image/png", 1.0)
 
+        // 更新历史记录 (不再限制数量)
+        setHistory((prevHistory) => [...prevHistory, resizedDataUrl])
+
         // 直接替换原图，这将触发 img 的 onLoad 事件，自动重新初始化裁剪框
         setOriginalImage(resizedDataUrl)
-        setHasEditedImage(true)
+        setHasEditedImage(true) // 标记为已编辑
 
         setError("")
         setCustomWidth("")
@@ -505,9 +513,21 @@ export default function ImageEditor() {
     setDisplaySize({ width: 0, height: 0 })
     setHasEditedImage(false)
     setCropBoxReady(false) // 清空时重置裁剪框准备状态
+    setHistory([]) // 清空历史记录
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
+  }
+
+  // 点击历史图片恢复
+  const handleHistoryClick = (imageDataUrl: string) => {
+    setOriginalImage(imageDataUrl)
+    setHasEditedImage(true) // 从历史记录恢复的图片视为已编辑
+    setCropBoxReady(false) // 强制重新触发 onLoad 来初始化裁剪框
+    toast({
+      title: "已恢复",
+      description: "图片已恢复到历史版本。",
+    })
   }
 
   // 计算裁剪框在显示图片上的位置和大小
@@ -831,6 +851,38 @@ export default function ImageEditor() {
               </CardContent>
             </Card>
           </div>
+
+          {/* 操作记录 */}
+          {history.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>操作记录</CardTitle>
+                <CardDescription>点击图片恢复到该版本</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* 移除 ScrollArea 和 ScrollBar，使用 flex wrap */}
+                <div className="flex flex-wrap gap-4 p-4 border rounded-md">
+                  {history.map((item, index) => (
+                    <figure key={index} className="shrink-0">
+                      <div
+                        className="overflow-hidden rounded-md cursor-pointer border-2 hover:border-blue-500 transition-colors"
+                        onClick={() => handleHistoryClick(item)}
+                      >
+                        <img
+                          src={item || "/placeholder.svg"}
+                          alt={`历史图片 ${index + 1}`}
+                          className="aspect-[3/2] h-20 w-auto object-contain"
+                        />
+                      </div>
+                      <figcaption className="pt-2 text-xs text-muted-foreground text-center">
+                        版本 {index + 1}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {error && (
             <Alert className="mt-6" variant="destructive">
