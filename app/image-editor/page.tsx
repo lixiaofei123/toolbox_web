@@ -49,11 +49,11 @@ export default function ImageEditor() {
     cropWidth: 0,
     cropHeight: 0,
   })
-  const [imageSize, setImageSize] = useState({ width: 0, height: 0 })
-  const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 })
-  const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
+  const [imageSize, setImageSize] = useState({ width: 0, height: 0 }) // Original image dimensions (naturalWidth/Height)
+  const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 }) // Displayed image dimensions (scaled to fit container)
   const [error, setError] = useState("")
-  const [hasEditedImage, setHasEditedImage] = useState(false) // 标记是否有编辑后的图片
+  const [hasEditedImage, setHasEditedImage] = useState(false)
+  const [cropBoxReady, setCropBoxReady] = useState(false) // State to control crop box visibility
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
@@ -61,7 +61,7 @@ export default function ImageEditor() {
   const { toast } = useToast()
 
   // 计算图片显示尺寸的函数
-  const calculateDisplaySize = (imgWidth: number, imgHeight: number) => {
+  const calculateDisplaySize = useCallback((imgWidth: number, imgHeight: number) => {
     const maxWidth = 600
     const maxHeight = 400
     let displayWidth = imgWidth
@@ -76,19 +76,42 @@ export default function ImageEditor() {
     displayHeight = imgHeight * ratio
 
     return { width: displayWidth, height: displayHeight }
-  }
+  }, [])
 
-  // 重置裁剪区域的函数
-  const resetCropAreaForImage = (imgWidth: number, imgHeight: number) => {
-    const defaultWidth = imgWidth * 0.8
-    const defaultHeight = imgHeight * 0.8
-    setCropArea({
-      x: (imgWidth - defaultWidth) / 2,
-      y: (imgHeight - defaultHeight) / 2,
-      width: defaultWidth,
-      height: defaultHeight,
-    })
-  }
+  // 处理图片加载完成后的初始化
+  const onImageLoaded = useCallback(
+    (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      const img = e.target as HTMLImageElement
+      const naturalWidth = img.naturalWidth
+      const naturalHeight = img.naturalHeight
+
+      setImageSize({ width: naturalWidth, height: naturalHeight })
+
+      const newDisplaySize = calculateDisplaySize(naturalWidth, naturalHeight)
+      setDisplaySize(newDisplaySize)
+
+      // 重置裁剪区域，基于图片的自然尺寸
+      const defaultWidth = naturalWidth * 0.8
+      const defaultHeight = naturalHeight * 0.8
+      const initialCropArea = {
+        x: (naturalWidth - defaultWidth) / 2,
+        y: (naturalHeight - defaultHeight) / 2,
+        width: defaultWidth,
+        height: defaultHeight,
+      }
+      setCropArea(initialCropArea) // Set crop area first
+
+      setSelectedRatio("free") // 确保比例重置为自由比例
+      setError("") // 清除任何之前的错误
+      setHasEditedImage(false) // 上传新图片或编辑后图片加载时重置编辑标志
+
+      // 使用 requestAnimationFrame 延迟设置 cropBoxReady，确保 DOM 布局完成
+      requestAnimationFrame(() => {
+        setCropBoxReady(true)
+      })
+    },
+    [calculateDisplaySize],
+  )
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -104,21 +127,13 @@ export default function ImageEditor() {
     reader.onload = (e) => {
       const result = e.target?.result as string
       setOriginalImage(result)
-      setHasEditedImage(false)
 
-      // 加载图片获取尺寸
-      const img = new Image()
-      img.onload = () => {
-        setImageSize({ width: img.width, height: img.height })
-
-        // 计算显示尺寸
-        const displaySize = calculateDisplaySize(img.width, img.height)
-        setDisplaySize(displaySize)
-
-        // 重置裁剪区域
-        resetCropAreaForImage(img.width, img.height)
-      }
-      img.src = result
+      // 立即清除旧的图片/裁剪状态，避免闪烁
+      setImageSize({ width: 0, height: 0 })
+      setDisplaySize({ width: 0, height: 0 })
+      setCropArea({ x: 0, y: 0, width: 0, height: 0 })
+      setSelectedRatio("free") // 重置比例
+      setCropBoxReady(false) // 重置裁剪框准备状态
     }
     reader.readAsDataURL(file)
   }
@@ -141,30 +156,50 @@ export default function ImageEditor() {
 
     const currentRatio = currentArea.width / currentArea.height
 
+    let newWidth = currentArea.width
+    let newHeight = currentArea.height
+    let newX = currentArea.x
+    let newY = currentArea.y
+
+    // 根据当前宽高比和目标宽高比进行调整
     if (currentRatio > targetRatio) {
-      // 当前太宽，调整宽度
-      const newWidth = currentArea.height * targetRatio
-      return {
-        ...currentArea,
-        width: newWidth,
-        x: currentArea.x + (currentArea.width - newWidth) / 2,
-      }
+      // 当前太宽，根据高度调整宽度
+      newWidth = currentArea.height * targetRatio
+      newX = currentArea.x + (currentArea.width - newWidth) / 2 // 水平居中
     } else {
-      // 当前太高，调整高度
-      const newHeight = currentArea.width / targetRatio
-      return {
-        ...currentArea,
-        height: newHeight,
-        y: currentArea.y + (currentArea.height - newHeight) / 2,
-      }
+      // 当前太高，根据宽度调整高度
+      newHeight = currentArea.width / targetRatio
+      newY = currentArea.y + (currentArea.height - newHeight) / 2 // 垂直居中
+    }
+
+    return {
+      x: newX,
+      y: newY,
+      width: newWidth,
+      height: newHeight,
     }
   }, [])
 
   const handleRatioChange = (ratio: string) => {
     setSelectedRatio(ratio)
-    if (originalImage) {
-      const newArea = calculateAspectRatio(ratio, cropArea)
-      setCropArea(newArea)
+    if (originalImage && imageSize.width > 0 && imageSize.height > 0) {
+      // 如果裁剪区域有效，则基于当前裁剪区域应用比例
+      if (cropArea.width > 0 && cropArea.height > 0) {
+        const newArea = calculateAspectRatio(ratio, cropArea)
+        setCropArea(newArea)
+      } else {
+        // 如果裁剪区域尚未初始化，则先初始化一个默认区域，再应用比例
+        const defaultWidth = imageSize.width * 0.8
+        const defaultHeight = imageSize.height * 0.8
+        const initialArea = {
+          x: (imageSize.width - defaultWidth) / 2,
+          y: (imageSize.height - defaultHeight) / 2,
+          width: defaultWidth,
+          height: defaultHeight,
+        }
+        const newArea = calculateAspectRatio(ratio, initialArea)
+        setCropArea(newArea)
+      }
     }
   }
 
@@ -178,7 +213,7 @@ export default function ImageEditor() {
     const mouseX = e.clientX - imageRect.left
     const mouseY = e.clientY - imageRect.top
 
-    // 计算缩放比例
+    // 计算从显示图片到原始图片尺寸的缩放比例
     const scaleX = imageSize.width / imageRect.width
     const scaleY = imageSize.height / imageRect.height
 
@@ -189,18 +224,35 @@ export default function ImageEditor() {
     }
   }
 
-  const constrainCropArea = (area: CropArea): CropArea => {
-    return {
-      x: Math.max(0, Math.min(area.x, imageSize.width - area.width)),
-      y: Math.max(0, Math.min(area.y, imageSize.height - area.y)),
-      width: Math.max(10, Math.min(area.width, imageSize.width - area.x)),
-      height: Math.max(10, Math.min(area.height, imageSize.height - area.y)),
-    }
-  }
+  const constrainCropArea = useCallback(
+    (area: CropArea): CropArea => {
+      let { x, y, width, height } = area
+
+      // 确保最小尺寸
+      width = Math.max(10, width)
+      height = Math.max(10, height)
+
+      // 确保在图片边界内
+      x = Math.max(0, Math.min(x, imageSize.width - width))
+      y = Math.max(0, Math.min(y, imageSize.height - height))
+
+      // 重新调整宽度/高度，如果它们在位置调整后超出了图片边界
+      width = Math.min(width, imageSize.width - x)
+      height = Math.min(height, imageSize.height - y)
+
+      return { x, y, width, height }
+    },
+    [imageSize],
+  )
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>, handle: ResizeHandle) => {
     e.preventDefault()
     e.stopPropagation()
+
+    if (!cropBoxReady || cropArea.width <= 0 || cropArea.height <= 0) {
+      // If crop box not ready or invalid, prevent dragging
+      return
+    }
 
     const mousePos = getMousePosition(e)
     setIsDragging(true)
@@ -260,6 +312,7 @@ export default function ImageEditor() {
         newArea.x = dragStart.cropX + deltaX
         newArea.width = dragStart.cropWidth - deltaX
         break
+        break
       case "e":
         newArea.width = dragStart.cropWidth + deltaX
         break
@@ -282,14 +335,15 @@ export default function ImageEditor() {
 
   // 修复后的剪裁功能
   const cropImage = () => {
-    if (!originalImage || !canvasRef.current) {
-      setError("请先上传图片")
+    if (!originalImage || !canvasRef.current || cropArea.width === 0 || cropArea.height === 0) {
+      setError("请先上传图片并确保裁剪区域有效")
       return
     }
 
     const canvas = canvasRef.current
     const ctx = canvas.getContext("2d")
     const img = new Image()
+    img.crossOrigin = "anonymous" // 跨域图片需要设置，避免canvas污染
 
     img.onload = () => {
       // 设置画布尺寸为裁剪区域的实际尺寸
@@ -297,7 +351,6 @@ export default function ImageEditor() {
       canvas.height = Math.round(cropArea.height)
 
       if (ctx) {
-        // 清空画布
         ctx.clearRect(0, 0, canvas.width, canvas.height)
 
         // 绘制裁剪后的图片
@@ -315,28 +368,19 @@ export default function ImageEditor() {
 
         const croppedDataUrl = canvas.toDataURL("image/png", 1.0)
 
-        // 直接替换原图
+        // 直接替换原图，这将触发 img 的 onLoad 事件，自动重新初始化裁剪框
         setOriginalImage(croppedDataUrl)
         setHasEditedImage(true)
 
-        // 更新图片尺寸信息
-        const newWidth = canvas.width
-        const newHeight = canvas.height
-        setImageSize({ width: newWidth, height: newHeight })
-
-        // 重新计算显示尺寸
-        const displaySize = calculateDisplaySize(newWidth, newHeight)
-        setDisplaySize(displaySize)
-
-        // 重置裁剪区域
-        resetCropAreaForImage(newWidth, newHeight)
-        setSelectedRatio("free")
-
         toast({
           title: "剪裁成功",
-          description: `图片已剪裁为 ${newWidth}×${newHeight}`,
+          description: `图片已剪裁为 ${canvas.width}×${canvas.height}`,
         })
       }
+    }
+
+    img.onerror = () => {
+      setError("图片加载失败，请确保图片可访问且无CORS问题。")
     }
 
     img.src = originalImage
@@ -352,6 +396,8 @@ export default function ImageEditor() {
     const canvas = canvasRef.current
     const ctx = canvas.getContext("2d")
     const img = new Image()
+    img.crossOrigin = "anonymous" // 跨域图片需要设置
+
     const newWidth = Number.parseInt(customWidth)
     const newHeight = Number.parseInt(customHeight)
 
@@ -371,7 +417,6 @@ export default function ImageEditor() {
       canvas.height = newHeight
 
       if (ctx) {
-        // 清空画布
         ctx.clearRect(0, 0, newWidth, newHeight)
 
         // 使用高质量的图片缩放
@@ -383,21 +428,11 @@ export default function ImageEditor() {
 
         const resizedDataUrl = canvas.toDataURL("image/png", 1.0)
 
-        // 直接替换原图
+        // 直接替换原图，这将触发 img 的 onLoad 事件，自动重新初始化裁剪框
         setOriginalImage(resizedDataUrl)
         setHasEditedImage(true)
-        setImageSize({ width: newWidth, height: newHeight })
 
-        // 重新计算显示尺寸
-        const displaySize = calculateDisplaySize(newWidth, newHeight)
-        setDisplaySize(displaySize)
-
-        // 重置裁剪区域
-        resetCropAreaForImage(newWidth, newHeight)
-        setSelectedRatio("free")
         setError("")
-
-        // 清空输入框
         setCustomWidth("")
         setCustomHeight("")
 
@@ -409,14 +444,21 @@ export default function ImageEditor() {
     }
 
     img.onerror = () => {
-      setError("图片加载失败")
+      setError("图片加载失败，请确保图片可访问且无CORS问题。")
     }
 
     img.src = originalImage
   }
 
   const downloadImage = () => {
-    if (!originalImage || !hasEditedImage) return
+    if (!originalImage || !hasEditedImage) {
+      toast({
+        title: "下载失败",
+        description: "没有可下载的编辑图片。",
+        variant: "destructive",
+      })
+      return
+    }
 
     const link = document.createElement("a")
     link.href = originalImage
@@ -432,9 +474,23 @@ export default function ImageEditor() {
   }
 
   const resetCrop = () => {
-    if (imageSize.width && imageSize.height) {
-      resetCropAreaForImage(imageSize.width, imageSize.height)
+    if (originalImage && imageSize.width > 0 && imageSize.height > 0) {
+      // Re-initialize crop area based on current image size
+      const defaultWidth = imageSize.width * 0.8
+      const defaultHeight = imageSize.height * 0.8
+      setCropArea({
+        x: (imageSize.width - defaultWidth) / 2,
+        y: (imageSize.height - defaultHeight) / 2,
+        width: defaultWidth,
+        height: defaultHeight,
+      })
       setSelectedRatio("free")
+      setCropBoxReady(true) // Ensure it's visible after reset
+    } else {
+      // If no image, clear everything
+      setCropArea({ x: 0, y: 0, width: 0, height: 0 })
+      setSelectedRatio("free")
+      setCropBoxReady(false)
     }
   }
 
@@ -448,6 +504,7 @@ export default function ImageEditor() {
     setImageSize({ width: 0, height: 0 })
     setDisplaySize({ width: 0, height: 0 })
     setHasEditedImage(false)
+    setCropBoxReady(false) // 清空时重置裁剪框准备状态
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -455,18 +512,30 @@ export default function ImageEditor() {
 
   // 计算裁剪框在显示图片上的位置和大小
   const getCropBoxStyle = () => {
-    if (!imageRef.current || cropArea.width === 0 || cropArea.height === 0) {
+    if (
+      !cropBoxReady || // 只有当裁剪框准备好时才显示
+      !imageRef.current ||
+      imageSize.width === 0 ||
+      imageSize.height === 0
+    ) {
       return { display: "none" }
     }
 
-    const imageRect = imageRef.current.getBoundingClientRect()
-    const containerRect = containerRef.current?.getBoundingClientRect()
+    // 使用 clientWidth/clientHeight 获取图片在DOM中实际渲染的尺寸
+    const imageRenderedWidth = imageRef.current.clientWidth
+    const imageRenderedHeight = imageRef.current.clientHeight
 
+    if (imageRenderedWidth === 0 || imageRenderedHeight === 0) {
+      // 如果图片尚未渲染出尺寸，则不显示裁剪框
+      return { display: "none" }
+    }
+
+    const containerRect = containerRef.current?.getBoundingClientRect()
     if (!containerRect) return { display: "none" }
 
-    // 计算缩放比例
-    const scaleX = imageRect.width / imageSize.width
-    const scaleY = imageRect.height / imageSize.height
+    // 计算从原始图片尺寸到显示图片尺寸的缩放比例
+    const scaleX = imageRenderedWidth / imageSize.width
+    const scaleY = imageRenderedHeight / imageSize.height
 
     // 计算裁剪框在显示图片上的位置和大小
     const displayCropX = cropArea.x * scaleX
@@ -475,6 +544,10 @@ export default function ImageEditor() {
     const displayCropHeight = cropArea.height * scaleY
 
     // 计算相对于容器的位置
+    // imageRef.current.getBoundingClientRect() 获取图片相对于视口的位置
+    // containerRect.left/top 获取容器相对于视口的位置
+    // 两者相减得到图片相对于容器的偏移量
+    const imageRect = imageRef.current.getBoundingClientRect()
     const left = imageRect.left - containerRect.left + displayCropX
     const top = imageRect.top - containerRect.top + displayCropY
 
@@ -608,7 +681,11 @@ export default function ImageEditor() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button onClick={cropImage} disabled={!originalImage} className="flex-1">
+                  <Button
+                    onClick={cropImage}
+                    disabled={!originalImage || !cropBoxReady || cropArea.width === 0 || cropArea.height === 0}
+                    className="flex-1"
+                  >
                     <Crop className="w-4 h-4 mr-2" />
                     剪裁
                   </Button>
@@ -671,10 +748,11 @@ export default function ImageEditor() {
                           height: `${displaySize.height}px`,
                         }}
                         draggable={false}
+                        onLoad={onImageLoaded} // 添加此处理程序
                       />
 
                       {/* 裁剪框覆盖层 */}
-                      {cropArea.width > 0 && cropArea.height > 0 && (
+                      {cropBoxReady && cropArea.width > 0 && cropArea.height > 0 && (
                         <div
                           className="border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
                           style={getCropBoxStyle()}
@@ -731,7 +809,7 @@ export default function ImageEditor() {
                         </Button>
                       )}
                     </div>
-                    {cropArea.width > 0 && cropArea.height > 0 && (
+                    {cropBoxReady && cropArea.width > 0 && cropArea.height > 0 && (
                       <div className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
                         <p>
                           <strong>裁剪区域:</strong> {Math.round(cropArea.width)} × {Math.round(cropArea.height)}
