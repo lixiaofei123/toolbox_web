@@ -1,24 +1,8 @@
 # 在线工具箱 (Online Toolbox)
 
-<div align="center">
-
-**集成多种实用开发工具，保护您的隐私安全**  
-**Integrated practical developer tools with privacy protection**
-
-[![Next.js](https://img.shields.io/badge/Next.js-13-black?style=flat-square&logo=next.js)](https://nextjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18-61dafb?style=flat-square&logo=react)](https://reactjs.org/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-
-**[🚀 立即体验 | Try it now](https://tool.lixf.ink/)**
-
-</div>
-
 > 本项目由 AI 生成，基于 Next.js + React + TypeScript 构建，集成多种实用开发者工具，所有功能均在本地浏览器端运行，保护您的隐私。
 > 
 > This project is AI-generated, built with Next.js + React + TypeScript, and integrates a variety of practical developer tools. All features run locally in your browser to protect your privacy.
-
-
 
 ---
 
@@ -30,30 +14,145 @@ This is a feature-rich online toolbox designed for developers and everyday users
 
 ---
 
-## 首页预览
+## 功能列表 (Features)
 
-![首页](images/index.png)
+### 🔄 编码转换工具 (Encoding & Conversion Tools)
+- **Base64 转换器** (Base64 Converter): 图片与Base64字符串互转 | Image & Base64 string conversion
+- **URL 编码器** (URL Encoder): URL编码解码工具 | Encode & decode URLs
+- **时间戳转换器** (Timestamp Converter): 时间戳与日期时间互转 | Timestamp & datetime conversion
+
+### 🖼️ 图片处理工具 (Image Processing Tools)
+- **图片格式转换器** (Image Converter): JPG/PNG/WebP/GIF 格式互转 | JPG/PNG/WebP/GIF conversion
+- **图片编辑器** (Image Editor): 剪裁、调整尺寸和比例 | Crop, resize, aspect ratio
+- **颜色取色器** (Color Picker): 从图片中精确提取颜色值 | Extract colors from images precisely
+
+### 🎨 颜色工具 (Color Tools)
+- **颜色转换器** (Color Converter): HEX/RGB/HSL 颜色格式互转 | HEX/RGB/HSL conversion
+
+### 🔐 安全工具 (Security Tools)
+- **哈希值生成器** (Hash Generator): MD5/SHA-1/SHA-256/SHA-384/SHA-512 哈希值生成 | Generate hash values with multiple algorithms
+- **密码生成器** (Password Generator): 生成安全的随机密码 | Generate secure random passwords
+- **JWT 解析器** (JWT Parser): 解析JWT token和验证签名 | Parse & verify JWT tokens
+- **UUID 生成器** (UUID Generator): 批量生成唯一标识符 | Batch generate UUIDs
+
+### 📝 文本处理工具 (Text Processing Tools)
+- **JSON 格式化器** (JSON Formatter): JSON美化、压缩、格式验证 | Beautify, minify, validate JSON
+- **正则表达式测试器** (Regex Tester): 验证正则表达式语法，测试匹配结果 | Test regex syntax & matches
+- **文本差异对比器** (Text Diff): 对比两段文本的差异 | Compare text differences
+- **文本搜索替换器** (Text Search Replace): 批量搜索替换文本内容 | Batch search and replace text
+
+### 🛠️ 开发工具 (Development Tools)
+- **二维码工具** (QR Code Tools): 生成和识别二维码 | Generate & scan QR codes
+- **Cron 表达式生成器** (Cron Generator): 生成和分析Cron表达式 | Generate & analyze cron expressions
 
 ---
 
-## 快速部署
+## 技术栈 (Tech Stack)
 
-Delpoy
+### 前端框架 (Frontend Framework)
+- **[Next.js](https://nextjs.org/) 15**: React 全栈框架 | React full-stack framework
+- **[React](https://react.dev/) 19**: 用户界面库 | User interface library
+- **[TypeScript](https://www.typescriptlang.org/)**: 类型安全的 JavaScript | Type-safe JavaScript
 
-### Docker部署
+### 样式和UI (Styling & UI)
+- **[Tailwind CSS](https://tailwindcss.com/)**: 实用优先的CSS框架 | Utility-first CSS framework
+- **[Radix UI](https://www.radix-ui.com/)**: 无样式的可访问组件 | Unstyled accessible components
+- **[Lucide React](https://lucide.dev/)**: 美观的图标库 | Beautiful icon library
 
-```
-docker run -d -p 8080:8080 mrlee326/toolbox_web:latest
-```
+### 工具库 (Utility Libraries)
+- **[CryptoJS](https://cryptojs.gitbook.io/)**: 加密算法库 | Cryptographic algorithms
+- **[date-fns](https://date-fns.org/)**: 现代化日期工具库 | Modern date utility library
+- **[Recharts](https://recharts.org/)**: React 图表库 | React charting library
+- **[Zod](https://zod.dev/)**: TypeScript 优先的模式验证 | TypeScript-first schema validation
+- **[QRCode.js](https://github.com/davidshimjs/qrcodejs)**: 二维码生成库 | QR code generation
+- **[jsQR](https://github.com/cozmo/jsQR)**: 二维码识别库 | QR code scanning
 
+---
 
-中国用户
+## 快速开始 (Quick Start)
 
-Chinese User
+### 环境要求 (Prerequisites)
+- Node.js 18+ 
+- pnpm (推荐) | pnpm (recommended) 或 npm/yarn
 
-```
-docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
-```
+### 安装与运行 (Installation & Running)
+
+#### 1. 克隆项目 (Clone the repository)
+\`\`\`bash
+git clone <repository-url>
+cd online-toolbox
+\`\`\`
+
+#### 2. 安装依赖 (Install dependencies)
+\`\`\`bash
+pnpm install
+# 或者 (or)
+npm install
+\`\`\`
+
+#### 3. 启动开发环境 (Start development server)
+\`\`\`bash
+pnpm dev
+# 或者 (or)
+npm run dev
+\`\`\`
+
+访问 http://localhost:3000 查看应用
+Visit http://localhost:3000 to view the application
+
+#### 4. 构建生产环境 (Build for production)
+\`\`\`bash
+pnpm build
+# 或者 (or)
+npm run build
+\`\`\`
+
+#### 5. 启动生产环境 (Start production server)
+\`\`\`bash
+pnpm start
+# 或者 (or)
+npm start
+\`\`\`
+
+---
+
+## 项目结构 (Project Structure)
+
+\`\`\`
+├── app/                    # Next.js App Router 页面 (App Router pages)
+│   ├── base64-converter/   # Base64 转换器 (Base64 converter)
+│   ├── color-converter/    # 颜色转换器 (Color converter)
+│   ├── color-picker/       # 颜色取色器 (Color picker)
+│   ├── cron-generator/     # Cron 表达式生成器 (Cron generator)
+│   ├── hash-generator/     # 哈希值生成器 (Hash generator)
+│   ├── image-converter/    # 图片格式转换器 (Image converter)
+│   ├── image-editor/       # 图片编辑器 (Image editor)
+│   ├── json-formatter/     # JSON 格式化器 (JSON formatter)
+│   ├── jwt-parser/         # JWT 解析器 (JWT parser)
+│   ├── password-generator/ # 密码生成器 (Password generator)
+│   ├── qr-code-tools/      # 二维码工具 (QR code tools)
+│   ├── regex-tester/       # 正则表达式测试器 (Regex tester)
+│   ├── text-diff/          # 文本差异对比器 (Text diff)
+│   ├── text-search-replace/# 文本搜索替换器 (Text search replace)
+│   ├── timestamp-converter/# 时间戳转换器 (Timestamp converter)
+│   ├── url-encoder/        # URL 编码器 (URL encoder)
+│   ├── uuid-generator/     # UUID 生成器 (UUID generator)
+│   ├── layout.tsx          # 根布局 (Root layout)
+│   ├── page.tsx            # 首页 (Homepage)
+│   └── globals.css         # 全局样式 (Global styles)
+├── components/             # 可复用组件 (Reusable components)
+│   ├── ui/                 # UI 组件库 (UI component library)
+│   └── theme-provider.tsx  # 主题提供者 (Theme provider)
+├── hooks/                  # 自定义 Hooks (Custom hooks)
+├── lib/                    # 工具库与核心逻辑 (Utils & core logic)
+├── public/                 # 静态资源 (Static assets)
+├── styles/                 # 样式文件 (Style files)
+├── package.json            # 项目依赖与脚本 (Dependencies & scripts)
+├── tsconfig.json           # TypeScript 配置 (TypeScript config)
+├── tailwind.config.ts      # Tailwind CSS 配置 (Tailwind config)
+├── next.config.mjs         # Next.js 配置 (Next.js config)
+└── README.md               # 项目说明 (Project documentation)
+\`\`\`
 
 ---
 

@@ -10,238 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeftRight, Copy, Trash2, Home } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-
-// 辅助函数：解析YAML中的值
-const parseValue = (value: string): any => {
-  if (value === "true") return true
-  if (value === "false") return false
-  if (value === "null" || value === "~") return null
-  if (value === "") return ""
-
-  // 数字
-  if (/^-?\d+$/.test(value)) return Number.parseInt(value, 10)
-  if (/^-?\d+\.\d+$/.test(value)) return Number.parseFloat(value)
-
-  // 字符串，去掉引号
-  if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-    return value.slice(1, -1)
-  }
-
-  return value
-}
-
-// 辅助函数：格式化值到YAML字符串
-const formatValue = (value: any): string => {
-  if (value === null || value === undefined) return "null"
-  if (typeof value === "boolean") return value.toString()
-  if (typeof value === "number") return value.toString()
-  if (typeof value === "string") {
-    // 如果字符串包含特殊字符，需要加引号
-    if (
-      value.includes(":") ||
-      value.includes("#") ||
-      value.includes("- ") ||
-      value.includes("[") ||
-      value.includes("]") ||
-      value.includes("{") ||
-      value.includes("}") ||
-      value.includes("\n") ||
-      value.trim() !== value ||
-      value === "true" ||
-      value === "false" ||
-      value === "null" ||
-      value === "" ||
-      /^\d+$/.test(value) ||
-      /^\d+\.\d+$/.test(value)
-    ) {
-      return `"${value.replace(/"/g, '\\"')}"`
-    }
-    return value
-  }
-  return JSON.stringify(value)
-}
-
-// 改进的YAML解析器
-const parseYAML = (yamlStr: string): any => {
-  try {
-    const lines = yamlStr.trim().split("\n")
-    const root: any = {}
-    // 栈存储 { context: 当前对象/数组, indent: 缩进级别 }
-    const stack: Array<{ context: any; indent: number }> = [{ context: root, indent: -1 }]
-
-    // 检查是否是根级数组
-    let isRootArray = false
-    for (let k = 0; k < lines.length; k++) {
-      if (lines[k].trim() !== "" && !lines[k].trim().startsWith("#")) {
-        if (lines[k].trim().startsWith("- ")) {
-          isRootArray = true
-        }
-        break
-      }
-    }
-
-    if (isRootArray) {
-      stack[0].context = [] // 将根上下文设置为数组
-    }
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]
-      if (line.trim() === "" || line.trim().startsWith("#")) continue
-
-      const indent = line.length - line.trimStart().length
-      const trimmedLine = line.trim()
-
-      // 调整栈深度 - 弹出缩进级别大于或等于当前行的上下文
-      while (stack.length > 1 && indent <= stack[stack.length - 1].indent) {
-        stack.pop()
-      }
-
-      const currentParent = stack[stack.length - 1].context
-
-      if (trimmedLine.startsWith("- ")) {
-        // 数组项
-        const valueStr = trimmedLine.substring(2).trim()
-
-        if (!Array.isArray(currentParent)) {
-          throw new Error(`数组项 "${trimmedLine}" 必须在数组上下文中。`)
-        }
-
-        if (valueStr.includes(":")) {
-          // 数组项是对象 (例如: - key: value)
-          const colonIndex = valueStr.indexOf(":")
-          const key = valueStr.substring(0, colonIndex).trim()
-          const value = valueStr.substring(colonIndex + 1).trim()
-
-          const newObj: any = {}
-          newObj[key] = parseValue(value)
-          currentParent.push(newObj)
-        } else {
-          // 简单数组项
-          currentParent.push(parseValue(valueStr))
-        }
-      } else if (trimmedLine.includes(":")) {
-        // 键值对
-        const colonIndex = trimmedLine.indexOf(":")
-        const key = trimmedLine.substring(0, colonIndex).trim()
-        const valueStr = trimmedLine.substring(colonIndex + 1).trim()
-
-        if (Array.isArray(currentParent)) {
-          throw new Error(`键值对 "${trimmedLine}" 不能直接出现在数组上下文中。`)
-        }
-
-        if (valueStr === "") {
-          // 预读下一行以确定是对象还是数组
-          let isNextLineArrayItem = false
-          if (i + 1 < lines.length) {
-            const nextLine = lines[i + 1]
-            const nextIndent = nextLine.length - nextLine.trimStart().length
-            const nextTrimmedLine = nextLine.trim()
-            if (nextIndent > indent && nextTrimmedLine.startsWith("- ")) {
-              isNextLineArrayItem = true
-            }
-          }
-
-          if (isNextLineArrayItem) {
-            currentParent[key] = []
-            stack.push({ context: currentParent[key], indent }) // 将新数组推入栈
-          } else {
-            currentParent[key] = {}
-            stack.push({ context: currentParent[key], indent }) // 将新对象推入栈
-          }
-        } else if (valueStr.startsWith("[") && valueStr.endsWith("]")) {
-          // 内联数组
-          try {
-            currentParent[key] = JSON.parse(valueStr)
-          } catch {
-            currentParent[key] = valueStr // JSON解析失败时作为字符串处理
-          }
-        } else if (valueStr.startsWith("{") && valueStr.endsWith("}")) {
-          // 内联对象
-          try {
-            currentParent[key] = JSON.parse(valueStr)
-          } catch {
-            currentParent[key] = valueStr // JSON解析失败时作为字符串处理
-          }
-        } else {
-          // 简单值
-          currentParent[key] = parseValue(valueStr)
-        }
-      } else {
-        // 无法识别的行格式
-        throw new Error(`无法识别的行格式 "${trimmedLine}"`)
-      }
-    }
-
-    return stack[0].context
-  } catch (error) {
-    throw new Error(`YAML解析错误: ${error instanceof Error ? error.message : "未知错误"}`)
-  }
-}
-
-// 改进的YAML生成器
-const generateYAML = (obj: any, indent = 0): string => {
-  const spaces = "  ".repeat(indent)
-  let result = ""
-
-  if (Array.isArray(obj)) {
-    if (obj.length === 0 && indent > 0) {
-      return "[]\n"
-    }
-    for (const item of obj) {
-      if (typeof item === "object" && item !== null && !Array.isArray(item)) {
-        // Handle object within an array
-        const itemYamlContent = generateYAML(item, indent + 1) // Generate object content with increased indent
-        const itemYamlLines = itemYamlContent.split("\n").filter((line) => line.trim() !== "") // Split and filter empty lines
-
-        if (itemYamlLines.length > 0) {
-          // Take the first line of the object's YAML and put it after the hyphen
-          const firstLineOfObject = itemYamlLines[0].trimStart()
-          result += `${spaces}- ${firstLineOfObject}\n`
-
-          // Append the rest of the object's lines, maintaining their original indentation
-          for (let k = 1; k < itemYamlLines.length; k++) {
-            result += `${itemYamlLines[k]}\n`
-          }
-        } else {
-          // Empty object in array
-          result += `${spaces}- {}\n`
-        }
-      } else if (Array.isArray(item)) {
-        // Nested array
-        result += `${spaces}- `
-        const itemYaml = generateYAML(item, indent + 1).trimStart()
-        result += `${itemYaml}\n`
-      } else {
-        result += `${spaces}- ${formatValue(item)}\n`
-      }
-    }
-  } else if (typeof obj === "object" && obj !== null) {
-    if (Object.keys(obj).length === 0 && indent > 0) {
-      return "{}\n"
-    }
-    for (const [key, value] of Object.entries(obj)) {
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          result += `${spaces}${key}: []\n`
-        } else {
-          result += `${spaces}${key}:\n`
-          result += generateYAML(value, indent + 1)
-        }
-      } else if (typeof value === "object" && value !== null) {
-        if (Object.keys(value).length === 0) {
-          result += `${spaces}${key}: {}\n`
-        } else {
-          result += `${spaces}${key}:\n`
-          result += generateYAML(value, indent + 1)
-        }
-      } else {
-        result += `${spaces}${key}: ${formatValue(value)}\n`
-      }
-    }
-  }
-
-  return result
-}
+import * as yaml from "js-yaml" // 引入 js-yaml 库
 
 export default function JsonYamlConverter() {
   const [jsonInput, setJsonInput] = useState("")
@@ -259,8 +28,9 @@ export default function JsonYamlConverter() {
       }
 
       const parsed = JSON.parse(jsonInput)
-      const yaml = generateYAML(parsed)
-      setYamlInput(yaml)
+      // 使用 js-yaml.dump 将 JavaScript 对象转换为 YAML 字符串
+      const yamlOutput = yaml.dump(parsed, { indent: 2, noRefs: true }) // indent: 2 保持缩进，noRefs: true 避免生成锚点和别名
+      setYamlInput(yamlOutput)
 
       toast({
         title: "转换成功",
@@ -279,7 +49,8 @@ export default function JsonYamlConverter() {
         return
       }
 
-      const parsed = parseYAML(yamlInput)
+      // 使用 js-yaml.load 将 YAML 字符串转换为 JavaScript 对象
+      const parsed = yaml.load(yamlInput)
       const json = JSON.stringify(parsed, null, 2)
       setJsonInput(json)
 
@@ -288,7 +59,7 @@ export default function JsonYamlConverter() {
         description: "YAML已成功转换为JSON",
       })
     } catch (error) {
-      setYamlError(error instanceof Error ? error.message : "未知错误")
+      setYamlError(`YAML解析错误: ${error instanceof Error ? error.message : "未知错误"}`)
     }
   }
 
@@ -468,17 +239,17 @@ dependencies:
   react: "^18.0.0"
   typescript: "^4.9.0"
 scripts:
-  - "build"
-  - "test"
-  - "deploy"
+  - build
+  - test
+  - deploy
 config:
   port: 3000
   debug: true
 nestedArray:
   - id: 1
-    value: "first"
+    value: first
   - id: 2
-    value: "second"
+    value: second
 rootArrayExample:
   - itemA
   - itemB

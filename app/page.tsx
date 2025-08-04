@@ -17,6 +17,7 @@ import {
   Cpu,
   Hash,
   Monitor,
+  ArrowLeftRight,
   Heart,
   Github,
 } from "lucide-react"
@@ -150,6 +151,13 @@ export default function Home() {
       icon: <Monitor className="w-4 h-4" />,
       color: "bg-slate-100 text-slate-600",
     },
+    {
+      name: "JSON/YAML转换",
+      description: "JSON和YAML格式互相转换",
+      href: "/json-yaml-converter",
+      icon: <ArrowLeftRight className="w-4 h-4" />,
+      color: "bg-blue-100 text-blue-600",
+    },
   ]
 
   return (
@@ -162,7 +170,7 @@ export default function Home() {
             <p className="text-gray-600 max-w-2xl mx-auto">
               免费、快速、易用的在线工具集合，无需安装，即开即用，提高您的工作效率
             </p>
-            <div className="mt-2 text-sm text-gray-500">由 v0.dev 自动生成</div>
+            <div className="mt-2 text-sm text-gray-500">由 V0.dev 自动生成</div>
           </header>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -196,7 +204,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-6 text-sm text-gray-600">
-              <span>© 2025 在线工具箱</span>
+              <span>© 2024 在线工具箱</span>
               <div className="flex items-center gap-4">
                 <a
                   href="https://github.com/lixiaofei123/toolbox_web"
@@ -215,7 +223,11 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 hover:text-gray-900 transition-colors"
                 >
-                  <img src="https://docs.cnb.cool/images/logo/svg/LogoMonochromeIcon.svg" />
+                  <img
+                    src="https://docs.cnb.cool/images/logo/svg/LogoMonochromeIcon.svg"
+                    className="w-4 h-4"
+                    alt="CNB"
+                  />
                   <span>CNB</span>
                 </a>
               </div>

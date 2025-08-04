@@ -35,7 +35,6 @@ type ResizeHandle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w" | "move" |
 
 export default function ImageEditor() {
   const [originalImage, setOriginalImage] = useState<string>("")
-  const [croppedImage, setCroppedImage] = useState<string>("")
   const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 })
   const [selectedRatio, setSelectedRatio] = useState<string>("free")
   const [customWidth, setCustomWidth] = useState<string>("")
@@ -54,11 +53,42 @@ export default function ImageEditor() {
   const [displaySize, setDisplaySize] = useState({ width: 0, height: 0 })
   const [imageOffset, setImageOffset] = useState({ x: 0, y: 0 })
   const [error, setError] = useState("")
+  const [hasEditedImage, setHasEditedImage] = useState(false) // 标记是否有编辑后的图片
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+
+  // 计算图片显示尺寸的函数
+  const calculateDisplaySize = (imgWidth: number, imgHeight: number) => {
+    const maxWidth = 600
+    const maxHeight = 400
+    let displayWidth = imgWidth
+    let displayHeight = imgHeight
+
+    // 按比例缩放，保持宽高比
+    const widthRatio = maxWidth / imgWidth
+    const heightRatio = maxHeight / imgHeight
+    const ratio = Math.min(widthRatio, heightRatio, 1) // 不放大，只缩小
+
+    displayWidth = imgWidth * ratio
+    displayHeight = imgHeight * ratio
+
+    return { width: displayWidth, height: displayHeight }
+  }
+
+  // 重置裁剪区域的函数
+  const resetCropAreaForImage = (imgWidth: number, imgHeight: number) => {
+    const defaultWidth = imgWidth * 0.8
+    const defaultHeight = imgHeight * 0.8
+    setCropArea({
+      x: (imgWidth - defaultWidth) / 2,
+      y: (imgHeight - defaultHeight) / 2,
+      width: defaultWidth,
+      height: defaultHeight,
+    })
+  }
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -74,7 +104,7 @@ export default function ImageEditor() {
     reader.onload = (e) => {
       const result = e.target?.result as string
       setOriginalImage(result)
-      setCroppedImage("")
+      setHasEditedImage(false)
 
       // 加载图片获取尺寸
       const img = new Image()
@@ -82,32 +112,11 @@ export default function ImageEditor() {
         setImageSize({ width: img.width, height: img.height })
 
         // 计算显示尺寸
-        const maxWidth = 600
-        const maxHeight = 400
-        let displayWidth = img.width
-        let displayHeight = img.height
+        const displaySize = calculateDisplaySize(img.width, img.height)
+        setDisplaySize(displaySize)
 
-        if (displayWidth > maxWidth) {
-          displayHeight = (displayHeight * maxWidth) / displayWidth
-          displayWidth = maxWidth
-        }
-
-        if (displayHeight > maxHeight) {
-          displayWidth = (displayWidth * maxHeight) / displayHeight
-          displayHeight = maxHeight
-        }
-
-        setDisplaySize({ width: displayWidth, height: displayHeight })
-
-        // 设置默认裁剪区域为中心的80%
-        const defaultWidth = img.width * 0.8
-        const defaultHeight = img.height * 0.8
-        setCropArea({
-          x: (img.width - defaultWidth) / 2,
-          y: (img.height - defaultHeight) / 2,
-          width: defaultWidth,
-          height: defaultHeight,
-        })
+        // 重置裁剪区域
+        resetCropAreaForImage(img.width, img.height)
       }
       img.src = result
     }
@@ -163,7 +172,6 @@ export default function ImageEditor() {
   const getMousePosition = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current || !imageRef.current) return { x: 0, y: 0 }
 
-    const containerRect = containerRef.current.getBoundingClientRect()
     const imageRect = imageRef.current.getBoundingClientRect()
 
     // 计算鼠标相对于图片的位置
@@ -184,7 +192,7 @@ export default function ImageEditor() {
   const constrainCropArea = (area: CropArea): CropArea => {
     return {
       x: Math.max(0, Math.min(area.x, imageSize.width - area.width)),
-      y: Math.max(0, Math.min(area.y, imageSize.height - area.height)),
+      y: Math.max(0, Math.min(area.y, imageSize.height - area.y)),
       width: Math.max(10, Math.min(area.width, imageSize.width - area.x)),
       height: Math.max(10, Math.min(area.height, imageSize.height - area.y)),
     }
@@ -272,6 +280,7 @@ export default function ImageEditor() {
     setDragHandle(null)
   }
 
+  // 修复后的剪裁功能
   const cropImage = () => {
     if (!originalImage || !canvasRef.current) {
       setError("请先上传图片")
@@ -283,28 +292,49 @@ export default function ImageEditor() {
     const img = new Image()
 
     img.onload = () => {
-      canvas.width = cropArea.width
-      canvas.height = cropArea.height
+      // 设置画布尺寸为裁剪区域的实际尺寸
+      canvas.width = Math.round(cropArea.width)
+      canvas.height = Math.round(cropArea.height)
 
       if (ctx) {
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+        // 绘制裁剪后的图片
         ctx.drawImage(
           img,
-          cropArea.x,
-          cropArea.y,
-          cropArea.width,
-          cropArea.height,
+          Math.round(cropArea.x),
+          Math.round(cropArea.y),
+          Math.round(cropArea.width),
+          Math.round(cropArea.height),
           0,
           0,
-          cropArea.width,
-          cropArea.height,
+          canvas.width,
+          canvas.height,
         )
 
-        const croppedDataUrl = canvas.toDataURL("image/png")
-        setCroppedImage(croppedDataUrl)
+        const croppedDataUrl = canvas.toDataURL("image/png", 1.0)
+
+        // 直接替换原图
+        setOriginalImage(croppedDataUrl)
+        setHasEditedImage(true)
+
+        // 更新图片尺寸信息
+        const newWidth = canvas.width
+        const newHeight = canvas.height
+        setImageSize({ width: newWidth, height: newHeight })
+
+        // 重新计算显示尺寸
+        const displaySize = calculateDisplaySize(newWidth, newHeight)
+        setDisplaySize(displaySize)
+
+        // 重置裁剪区域
+        resetCropAreaForImage(newWidth, newHeight)
+        setSelectedRatio("free")
 
         toast({
           title: "剪裁成功",
-          description: "图片已成功剪裁",
+          description: `图片已剪裁为 ${newWidth}×${newHeight}`,
         })
       }
     }
@@ -312,6 +342,7 @@ export default function ImageEditor() {
     img.src = originalImage
   }
 
+  // 修复后的尺寸调整功能
   const resizeImage = () => {
     if (!originalImage || !canvasRef.current || !customWidth || !customHeight) {
       setError("请输入有效的宽度和高度")
@@ -329,7 +360,13 @@ export default function ImageEditor() {
       return
     }
 
+    if (newWidth > 5000 || newHeight > 5000) {
+      setError("宽度和高度不能超过5000像素")
+      return
+    }
+
     img.onload = () => {
+      // 设置画布尺寸
       canvas.width = newWidth
       canvas.height = newHeight
 
@@ -337,16 +374,36 @@ export default function ImageEditor() {
         // 清空画布
         ctx.clearRect(0, 0, newWidth, newHeight)
 
+        // 使用高质量的图片缩放
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = "high"
+
         // 绘制调整后的图片
         ctx.drawImage(img, 0, 0, newWidth, newHeight)
 
-        const resizedDataUrl = canvas.toDataURL("image/png")
-        setCroppedImage(resizedDataUrl)
+        const resizedDataUrl = canvas.toDataURL("image/png", 1.0)
+
+        // 直接替换原图
+        setOriginalImage(resizedDataUrl)
+        setHasEditedImage(true)
+        setImageSize({ width: newWidth, height: newHeight })
+
+        // 重新计算显示尺寸
+        const displaySize = calculateDisplaySize(newWidth, newHeight)
+        setDisplaySize(displaySize)
+
+        // 重置裁剪区域
+        resetCropAreaForImage(newWidth, newHeight)
+        setSelectedRatio("free")
         setError("")
+
+        // 清空输入框
+        setCustomWidth("")
+        setCustomHeight("")
 
         toast({
           title: "调整成功",
-          description: `图片尺寸已调整为 ${newWidth}x${newHeight}`,
+          description: `图片尺寸已调整为 ${newWidth}×${newHeight}`,
         })
       }
     }
@@ -359,32 +416,30 @@ export default function ImageEditor() {
   }
 
   const downloadImage = () => {
-    if (!croppedImage) return
+    if (!originalImage || !hasEditedImage) return
 
     const link = document.createElement("a")
-    link.href = croppedImage
-    link.download = "edited-image.png"
+    link.href = originalImage
+    link.download = `edited-image-${imageSize.width}x${imageSize.height}.png`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+
+    toast({
+      title: "下载成功",
+      description: `图片已下载：${imageSize.width}×${imageSize.height}`,
+    })
   }
 
   const resetCrop = () => {
     if (imageSize.width && imageSize.height) {
-      const defaultWidth = imageSize.width * 0.8
-      const defaultHeight = imageSize.height * 0.8
-      setCropArea({
-        x: (imageSize.width - defaultWidth) / 2,
-        y: (imageSize.height - defaultHeight) / 2,
-        width: defaultWidth,
-        height: defaultHeight,
-      })
+      resetCropAreaForImage(imageSize.width, imageSize.height)
+      setSelectedRatio("free")
     }
   }
 
   const clearAll = () => {
     setOriginalImage("")
-    setCroppedImage("")
     setCropArea({ x: 0, y: 0, width: 0, height: 0 })
     setSelectedRatio("free")
     setCustomWidth("")
@@ -392,6 +447,7 @@ export default function ImageEditor() {
     setError("")
     setImageSize({ width: 0, height: 0 })
     setDisplaySize({ width: 0, height: 0 })
+    setHasEditedImage(false)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -459,7 +515,7 @@ export default function ImageEditor() {
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <p className="text-gray-600">拖拽调整裁剪框，支持移动和调整大小</p>
+            <p className="text-gray-600">拖拽调整裁剪框，支持移动和调整大小，编辑后直接替换到编辑区域</p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -486,9 +542,12 @@ export default function ImageEditor() {
                 </div>
 
                 {originalImage && (
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
                     <p>
-                      原始尺寸: {imageSize.width} × {imageSize.height}
+                      <strong>当前尺寸:</strong> {imageSize.width} × {imageSize.height}
+                    </p>
+                    <p>
+                      <strong>显示尺寸:</strong> {Math.round(displaySize.width)} × {Math.round(displaySize.height)}
                     </p>
                   </div>
                 )}
@@ -543,7 +602,7 @@ export default function ImageEditor() {
                   </div>
                   {originalImage && (
                     <div className="text-xs text-gray-500">
-                      原始尺寸: {imageSize.width} × {imageSize.height}
+                      当前尺寸: {imageSize.width} × {imageSize.height}
                     </div>
                   )}
                 </div>
@@ -594,7 +653,7 @@ export default function ImageEditor() {
                   <div className="space-y-4">
                     <div
                       ref={containerRef}
-                      className="relative border rounded-lg overflow-hidden bg-gray-50 flex justify-center"
+                      className="relative border rounded-lg overflow-hidden bg-gray-50 flex justify-center items-center"
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
                       onMouseLeave={handleMouseUp}
@@ -604,8 +663,13 @@ export default function ImageEditor() {
                         ref={imageRef}
                         src={originalImage || "/placeholder.svg"}
                         alt="编辑中的图片"
-                        className="max-w-full h-auto"
-                        style={{ maxWidth: "600px", maxHeight: "400px" }}
+                        className="max-w-full max-h-full object-contain"
+                        style={{
+                          maxWidth: "600px",
+                          maxHeight: "400px",
+                          width: `${displaySize.width}px`,
+                          height: `${displaySize.height}px`,
+                        }}
                         draggable={false}
                       />
 
@@ -658,14 +722,22 @@ export default function ImageEditor() {
                           />
                         </div>
                       )}
+
+                      {/* 右下角下载按钮 */}
+                      {hasEditedImage && (
+                        <Button onClick={downloadImage} size="sm" className="absolute bottom-4 right-4 shadow-lg">
+                          <Download className="w-4 h-4 mr-2" />
+                          下载
+                        </Button>
+                      )}
                     </div>
                     {cropArea.width > 0 && cropArea.height > 0 && (
-                      <div className="text-sm text-gray-600">
+                      <div className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
                         <p>
-                          裁剪区域: {Math.round(cropArea.width)} × {Math.round(cropArea.height)}
+                          <strong>裁剪区域:</strong> {Math.round(cropArea.width)} × {Math.round(cropArea.height)}
                         </p>
                         <p>
-                          位置: ({Math.round(cropArea.x)}, {Math.round(cropArea.y)})
+                          <strong>位置:</strong> ({Math.round(cropArea.x)}, {Math.round(cropArea.y)})
                         </p>
                       </div>
                     )}
@@ -680,34 +752,6 @@ export default function ImageEditor() {
                 )}
               </CardContent>
             </Card>
-
-            {/* 结果预览 */}
-            {croppedImage && (
-              <Card className="lg:col-span-3">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Download className="w-5 h-5" />
-                    编辑结果
-                  </CardTitle>
-                  <CardDescription>编辑后的图片预览</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="border rounded-lg p-4 bg-gray-50 text-center">
-                      <img
-                        src={croppedImage || "/placeholder.svg"}
-                        alt="编辑后的图片"
-                        className="max-w-full max-h-[300px] object-contain mx-auto rounded"
-                      />
-                    </div>
-                    <Button onClick={downloadImage} className="w-full bg-transparent" variant="outline">
-                      <Download className="w-4 h-4 mr-2" />
-                      下载编辑后的图片
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
           {error && (
