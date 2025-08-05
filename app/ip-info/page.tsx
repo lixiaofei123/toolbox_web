@@ -353,7 +353,7 @@ export default function IPInfoPage() {
                   <CardContent className="p-0">
                     <div className="h-96 w-full rounded-b-lg overflow-hidden">
                       <iframe
-                        src={`https://ditu.amap.com/regeo?lng=${ipInfo.geo.longitude}&lat=${ipInfo.geo.latitude}`}
+                        src={`http://api.map.baidu.com/marker?location=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&title=我的位置&&output=html&src=webapp.baidu.openAPIdemo`}
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}
@@ -372,7 +372,7 @@ export default function IPInfoPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" size="sm" asChild className="text-xs bg-transparent">
                           <a
-                            href={`http://api.map.baidu.com/marker?location=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&title=我的位置&&output=html&src=webapp.baidu.openAPIdemo`}
+                            href={`https://www.google.com/maps?q=${ipInfo.geo.latitude},${ipInfo.geo.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
