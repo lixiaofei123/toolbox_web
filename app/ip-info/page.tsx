@@ -372,7 +372,7 @@ export default function IPInfoPage() {
                       <div className="flex flex-wrap gap-2">
                         <Button variant="outline" size="sm" asChild className="text-xs bg-transparent">
                           <a
-                            href={`https://www.google.com/maps?q=${ipInfo.geo.latitude},${ipInfo.geo.longitude}`}
+                            href={`http://api.map.baidu.com/marker?location=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&title=我的位置&&output=html&src=webapp.baidu.openAPIdemo`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >
