@@ -77,7 +77,7 @@ export default function IPInfoPage() {
       setLoading(true)
       setIsUsingFakeData(false)
 
-      const response = await fetch("/")
+      const response = await fetch("/api/ipinfo")
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
