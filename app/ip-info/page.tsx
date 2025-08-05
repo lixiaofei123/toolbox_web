@@ -36,11 +36,9 @@ interface GeoInfo {
 }
 
 interface APIResponse {
-  eo: {
-    geo: GeoInfo
-    uuid: string
-    clientIp: string
-  }
+  geo: GeoInfo
+  uuid: string
+  clientIp: string
 }
 
 interface IPInfo {
@@ -79,7 +77,7 @@ export default function IPInfoPage() {
       setLoading(true)
       setIsUsingFakeData(false)
 
-      const response = await fetch("/geo")
+      const response = await fetch("/")
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
@@ -87,11 +85,11 @@ export default function IPInfoPage() {
       const data: APIResponse = await response.json()
 
       // 验证数据结构
-      if (!data.eo || !data.eo.geo) {
+      if (!data.geo) {
         throw new Error("Invalid response format")
       }
 
-      setIpInfo(data.eo)
+      setIpInfo(data)
     } catch (err) {
       console.error("Failed to fetch IP info:", err)
       // 使用假数据作为fallback

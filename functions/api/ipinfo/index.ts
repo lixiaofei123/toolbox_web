@@ -22,9 +22,7 @@ export function onRequest({ request }: { request: EORequest }) {
   const eo = request.eo;
 
   return new Response(
-    JSON.stringify({
-      eo,
-    }),
+    JSON.stringify(eo),
     {
       headers: {
         'content-type': 'application/json; charset=UTF-8',
