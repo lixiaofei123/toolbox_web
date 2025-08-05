@@ -19,67 +19,103 @@ export default function Loading() {
       </header>
 
       {/* 主要内容骨架 */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center mb-8">
-          <Skeleton className="w-16 h-16 rounded-full mx-auto mb-4" />
-          <Skeleton className="h-8 w-64 mx-auto mb-2" />
-          <Skeleton className="h-4 w-80 mx-auto" />
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="text-center mb-6">
+          <Skeleton className="w-12 h-12 rounded-full mx-auto mb-3" />
+          <Skeleton className="h-6 w-48 mx-auto mb-1" />
+          <Skeleton className="h-4 w-64 mx-auto" />
         </div>
 
-        <div className="space-y-6">
-          {/* 基本信息卡片骨架 */}
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-3 bg-gray-50 rounded-lg">
-                    <Skeleton className="h-4 w-16 mb-2" />
-                    <Skeleton className="h-6 w-32" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* 左侧骨架 */}
+          <div className="space-y-4">
+            {/* 基本信息卡片骨架 */}
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-3">
+                  <div className="p-2 bg-gray-50 rounded">
+                    <Skeleton className="h-3 w-12 mb-1" />
+                    <Skeleton className="h-4 w-32" />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="p-2 bg-gray-50 rounded">
+                    <Skeleton className="h-3 w-12 mb-1" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-2 bg-gray-50 rounded">
+                      <Skeleton className="h-3 w-8 mb-1" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                    <div className="p-2 bg-gray-50 rounded">
+                      <Skeleton className="h-3 w-8 mb-1" />
+                      <Skeleton className="h-4 w-20" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* 地理位置卡片骨架 */}
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="p-3 bg-gray-50 rounded-lg">
-                    <Skeleton className="h-4 w-16 mb-2" />
-                    <Skeleton className="h-6 w-24" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+            {/* 地理位置卡片骨架 */}
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="p-2 bg-gray-50 rounded">
+                      <Skeleton className="h-3 w-12 mb-1" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* 国家代码卡片骨架 */}
-          <Card className="bg-white/80 backdrop-blur-sm">
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="p-3 bg-gray-50 rounded-lg">
-                    <Skeleton className="h-4 w-20 mb-2" />
-                    <Skeleton className="h-6 w-16" />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+            {/* 国家代码卡片骨架 */}
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-24" />
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="text-center p-2 bg-gray-50 rounded">
+                      <Skeleton className="h-3 w-12 mx-auto mb-1" />
+                      <Skeleton className="h-4 w-8 mx-auto" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 右侧地图骨架 */}
+          <div className="space-y-4">
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-3 w-48" />
+              </CardHeader>
+              <CardContent className="p-0">
+                <Skeleton className="h-96 w-full rounded-b-lg" />
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/80 backdrop-blur-sm">
+              <CardContent className="pt-4">
+                <Skeleton className="h-4 w-32 mb-2" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-28" />
+                  <Skeleton className="h-8 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>
