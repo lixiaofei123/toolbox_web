@@ -20,6 +20,7 @@ import {
   ArrowLeftRight,
   Heart,
   Github,
+  Globe,
 } from "lucide-react"
 
 export default function Home() {
@@ -157,6 +158,13 @@ export default function Home() {
       href: "/json-yaml-converter",
       icon: <ArrowLeftRight className="w-4 h-4" />,
       color: "bg-blue-100 text-blue-600",
+    },
+    {
+      name: "IP信息查询",
+      description: "获取本机IP地址和地理位置信息",
+      href: "/ip-info",
+      icon: <Globe className="w-4 h-4" />,
+      color: "bg-emerald-100 text-emerald-600",
     },
   ]
 
