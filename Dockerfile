@@ -15,7 +15,7 @@ RUN npm install
 COPY . .
 
 # 构建应用
-RUN npm run build
+RUN NEXT_STATIC_EXPORT=true npm run build
 
 # 第二阶段：生产阶段
 FROM node:18-alpine AS production

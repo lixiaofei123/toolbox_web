@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // 启用静态导出
-  output: 'export',
+ //  output: 'export',
   
   // 禁用图片优化（静态导出不支持）
   images: {
