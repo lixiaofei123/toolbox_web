@@ -1,4 +1,4 @@
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 function fakeUUID(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
