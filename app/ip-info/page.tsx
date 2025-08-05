@@ -353,7 +353,7 @@ export default function IPInfoPage() {
                   <CardContent className="p-0">
                     <div className="h-96 w-full rounded-b-lg overflow-hidden">
                       <iframe
-                        src={`https://www.openstreetmap.org/export/embed.html?bbox=${ipInfo.geo.longitude - 0.01},${ipInfo.geo.latitude - 0.01},${ipInfo.geo.longitude + 0.01},${ipInfo.geo.latitude + 0.01}&layer=mapnik&marker=${ipInfo.geo.latitude},${ipInfo.geo.longitude}`}
+                        src={`https://ditu.amap.com/regeo?lng=${ipInfo.geo.longitude}&lat=${ipInfo.geo.latitude}`}
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}
