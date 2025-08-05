@@ -353,7 +353,7 @@ export default function IPInfoPage() {
                   <CardContent className="p-0">
                     <div className="h-96 w-full rounded-b-lg overflow-hidden">
                       <iframe
-                        src={`http://api.map.baidu.com/marker?location=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&title=我的位置&&output=html&src=webapp.baidu.openAPIdemo`}
+                        src={`https://api.map.baidu.com/marker?location=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&title=我的位置&&output=html&src=webapp.baidu.openAPIdemo`}
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}
