@@ -14,6 +14,8 @@ RUN npm install
 # 复制源代码
 COPY . .
 
+COPY next.config.mjs.docker next.config.mjs
+
 # 构建应用
 RUN NEXT_STATIC_EXPORT=true npm run build
 
