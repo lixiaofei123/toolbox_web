@@ -17,12 +17,6 @@ const nextConfig = {
   // 严格模式
   reactStrictMode: true,
   
-  // 实验性功能
-  experimental: {
-    // 启用应用目录
-    appDir: true,
-  },
-  
   // 编译器选项
   compiler: {
     // 移除 console.log
