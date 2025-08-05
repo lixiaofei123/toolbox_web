@@ -35,6 +35,9 @@
 
 [![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web)
 
+
+> 推荐使用 Tencent EdgeOne Pages 部署，IP信息查询依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能
+
 ### 部署到Vercel
 
 
