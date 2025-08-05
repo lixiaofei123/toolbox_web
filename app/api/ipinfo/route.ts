@@ -1,4 +1,4 @@
-export const runtime = 'edge'; // 声明为边缘函数
+export const runtime = 'edge';
 
 function fakeUUID(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -20,7 +20,6 @@ function getAlpha3(alpha2: string): string {
   return map[alpha2.toUpperCase()] ?? 'Unknown';
 }
 
-// Alpha-2 转数字国家码
 function getCountryNumeric(alpha2: string): string {
   const map: Record<string, string> = {
     CN: '156',
@@ -49,8 +48,12 @@ export async function GET(request: Request) {
   const asnRaw = headers.get('x-vercel-ip-asn') ?? '';
   const countryAlpha2 = headers.get('x-vercel-ip-country') ?? '';
 
+  const latitude = parseFloat(headers.get('x-vercel-ip-latitude') ?? '');
+  const longitude = parseFloat(headers.get('x-vercel-ip-longitude') ?? '');
+  const asn = parseInt(asnRaw);
+
   const geo = {
-    asn: parseInt(asnRaw) || 'Unknown',
+    asn: isNaN(asn) ? null : asn,
     countryName: headers.get('x-vercel-ip-country-region') || 'Unknown',
     countryCodeAlpha2: countryAlpha2 || 'Unknown',
     countryCodeAlpha3: getAlpha3(countryAlpha2),
@@ -58,8 +61,8 @@ export async function GET(request: Request) {
     regionName: headers.get('x-vercel-ip-region') || 'Unknown',
     regionCode: headers.get('x-vercel-ip-region-code') || 'Unknown',
     cityName: headers.get('x-vercel-ip-city') || 'Unknown',
-    latitude: parseFloat(headers.get('x-vercel-ip-latitude') ?? '') || 'Unknown',
-    longitude: parseFloat(headers.get('x-vercel-ip-longitude') ?? '') || 'Unknown',
+    latitude: isNaN(latitude) ? null : latitude,
+    longitude: isNaN(longitude) ? null : longitude,
     cisp: getISP(asnRaw),
   };
 
