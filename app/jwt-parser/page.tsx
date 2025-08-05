@@ -24,6 +24,7 @@ import {
   FileText,
   Lock,
   Unlock,
+  RefreshCw,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -64,6 +65,8 @@ export default function JwtParser() {
   const [error, setError] = useState("")
   const [copied, setCopied] = useState("")
   const [isVerifying, setIsVerifying] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [editablePayload, setEditablePayload] = useState("")
   const { toast } = useToast()
 
   // Base64 URL 解码 - 修复填充逻辑
@@ -132,6 +135,7 @@ export default function JwtParser() {
       }
 
       setParsedJWT(parsed)
+      setEditablePayload(JSON.stringify(payload, null, 2))
       setError("")
       setIsValid(null) // 重置验证状态
 
@@ -142,6 +146,7 @@ export default function JwtParser() {
     } catch (err) {
       setError("JWT解析失败：" + (err instanceof Error ? err.message : "未知错误"))
       setParsedJWT(null)
+      setEditablePayload("")
       setIsValid(null)
     }
   }
@@ -215,6 +220,96 @@ export default function JwtParser() {
     }
   }
 
+  // 重新生成 JWT
+  const regenerateJWT = async () => {
+    if (!parsedJWT) {
+      setError("请先解析JWT token")
+      return
+    }
+
+    if (!secretKey.trim()) {
+      setError("请输入密钥")
+      return
+    }
+
+    if (!editablePayload.trim()) {
+      setError("Payload不能为空")
+      return
+    }
+
+    setIsGenerating(true)
+    setError("")
+
+    try {
+      // 解析用户编辑的payload
+      const newPayload = JSON.parse(editablePayload)
+
+      // 使用原来的header，但确保算法一致
+      const header = {
+        ...parsedJWT.header,
+        alg: algorithm,
+      }
+
+      // Base64URL编码
+      const headerEncoded = base64UrlEncode(JSON.stringify(header))
+      const payloadEncoded = base64UrlEncode(JSON.stringify(newPayload))
+
+      // 构建待签名数据
+      const data = `${headerEncoded}.${payloadEncoded}`
+
+      // 生成签名
+      let signature = ""
+      if (algorithm.startsWith("HS")) {
+        const hashAlgorithm = algorithm === "HS256" ? "SHA-256" : algorithm === "HS384" ? "SHA-384" : "SHA-512"
+
+        const encoder = new TextEncoder()
+        const keyData = encoder.encode(secretKey)
+        const messageData = encoder.encode(data)
+
+        const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: hashAlgorithm }, false, [
+          "sign",
+        ])
+
+        const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData)
+        const signatureArray = new Uint8Array(signatureBuffer)
+
+        signature = btoa(String.fromCharCode(...signatureArray))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=/g, "")
+      }
+
+      // 构建完整的JWT
+      const newJWT = `${headerEncoded}.${payloadEncoded}.${signature}`
+
+      // 更新JWT token输入框
+      setJwtToken(newJWT)
+
+      // 更新解析结果
+      const updatedParsedJWT: ParsedJWT = {
+        header,
+        payload: newPayload,
+        signature,
+        raw: {
+          header: headerEncoded,
+          payload: payloadEncoded,
+          signature,
+        },
+      }
+      setParsedJWT(updatedParsedJWT)
+      setIsValid(null) // 重置验证状态
+
+      toast({
+        title: "重新生成成功",
+        description: "JWT token已重新生成并更新",
+      })
+    } catch (err) {
+      setError("重新生成JWT失败：" + (err instanceof Error ? err.message : "未知错误"))
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   // 复制到剪贴板
   const copyToClipboard = async (text: string, type: string) => {
     try {
@@ -253,6 +348,7 @@ export default function JwtParser() {
     setIsValid(null)
     setError("")
     setCopied("")
+    setEditablePayload("")
   }
 
   // 加载示例JWT - 使用真实有效的JWT
@@ -292,7 +388,7 @@ export default function JwtParser() {
       <div className="p-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
-            <p className="text-gray-600">解析JWT token结构，验证签名有效性</p>
+            <p className="text-gray-600">解析JWT token结构，验证签名有效性，支持修改Payload重新生成</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
@@ -334,7 +430,7 @@ export default function JwtParser() {
                 {parsedJWT && (
                   <div className="space-y-4 pt-4 border-t">
                     <div>
-                      <Label htmlFor="secret-key">密钥 (用于验证签名)</Label>
+                      <Label htmlFor="secret-key">密钥 (用于验证签名和重新生成)</Label>
                       <Input
                         id="secret-key"
                         type="password"
@@ -359,19 +455,39 @@ export default function JwtParser() {
                       </Select>
                     </div>
 
-                    <Button onClick={verifyJWT} disabled={isVerifying} className="w-full">
-                      {isVerifying ? (
-                        <>
-                          <Shield className="w-4 h-4 mr-2 animate-spin" />
-                          验证中...
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="w-4 h-4 mr-2" />
-                          验证签名
-                        </>
-                      )}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={verifyJWT} disabled={isVerifying} className="flex-1">
+                        {isVerifying ? (
+                          <>
+                            <Shield className="w-4 h-4 mr-2 animate-spin" />
+                            验证中...
+                          </>
+                        ) : (
+                          <>
+                            <Shield className="w-4 h-4 mr-2" />
+                            验证签名
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={regenerateJWT}
+                        disabled={isGenerating || !secretKey.trim()}
+                        variant="secondary"
+                        className="flex-1"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            生成中...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            重新生成
+                          </>
+                        )}
+                      </Button>
+                    </div>
 
                     {/* 验证结果 */}
                     {isValid !== null && (
@@ -403,7 +519,7 @@ export default function JwtParser() {
                   <FileText className="w-5 h-5" />
                   解析结果
                 </CardTitle>
-                <CardDescription>JWT token的详细信息</CardDescription>
+                <CardDescription>JWT token的详细信息，可编辑Payload重新生成</CardDescription>
               </CardHeader>
               <CardContent>
                 {parsedJWT ? (
@@ -522,29 +638,49 @@ export default function JwtParser() {
                       </div>
 
                       <div>
-                        <Label>完整 Payload</Label>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label>可编辑 Payload</Label>
+                          <Badge variant="secondary" className="text-xs">
+                            可编辑
+                          </Badge>
+                        </div>
                         <Textarea
-                          value={JSON.stringify(parsedJWT.payload, null, 2)}
-                          readOnly
+                          value={editablePayload}
+                          onChange={(e) => setEditablePayload(e.target.value)}
                           className="min-h-[200px] font-mono text-sm"
+                          placeholder="编辑Payload内容，必须是有效的JSON格式"
                         />
-                        <Button
-                          onClick={() => copyToClipboard(JSON.stringify(parsedJWT.payload, null, 2), "Payload")}
-                          className="w-full mt-2"
-                          variant="outline"
-                        >
-                          {copied === "Payload" ? (
-                            <>
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              已复制
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-4 h-4 mr-2" />
-                              复制 Payload
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            onClick={() => copyToClipboard(editablePayload, "Payload")}
+                            className="flex-1"
+                            variant="outline"
+                          >
+                            {copied === "Payload" ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                已复制
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-4 h-4 mr-2" />
+                                复制 Payload
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            onClick={() => setEditablePayload(JSON.stringify(parsedJWT.payload, null, 2))}
+                            variant="outline"
+                            className="flex-1"
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            重置
+                          </Button>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          <p>• 修改Payload后，点击左侧"重新生成"按钮生成新的JWT</p>
+                          <p>• 确保内容是有效的JSON格式</p>
+                        </div>
                       </div>
                     </TabsContent>
 
@@ -640,6 +776,9 @@ export default function JwtParser() {
                     <li>• exp: 过期时间</li>
                     <li>• sub: 主题</li>
                     <li>• 可包含自定义声明</li>
+                    <li>
+                      • <strong>支持编辑和重新生成</strong>
+                    </li>
                   </ul>
                 </div>
                 <div>
