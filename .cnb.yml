@@ -1,7 +1,7 @@
 $:
   vscode:
     - docker:
-        image: docker.cnb.cool/examples/language/node-22
+        image: docker.cnb.cool/examples/workspace-images/workspace-node
       services:
         - vscode
         - docker
