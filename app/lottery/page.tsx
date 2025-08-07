@@ -35,6 +35,7 @@ export default function LotteryPage() {
   const [newParticipant, setNewParticipant] = useState('')
   const [winnerCount, setWinnerCount] = useState(1)
   const [isDrawing, setIsDrawing] = useState(false)
+  const [isStopping, setIsStopping] = useState(false) // 新增：是否正在停止状态
   const [winners, setWinners] = useState<Participant[]>([])
   const [currentDisplayIndex, setCurrentDisplayIndex] = useState(-1)
   const [rollingNames, setRollingNames] = useState<string[]>([])
@@ -46,15 +47,18 @@ export default function LotteryPage() {
   const [wheelRotation, setWheelRotation] = useState(0)
   const [isWheelSpinning, setIsWheelSpinning] = useState(false)
   const [wheelWinner, setWheelWinner] = useState<Prize | null>(null)
+  const [wheelPower, setWheelPower] = useState(0) // 力度 (0-100)
+  const [isPowerCharging, setIsPowerCharging] = useState(false) // 是否正在蓄力
   
   // 数字抽奖模式状态
   const [minNumber, setMinNumber] = useState(1)
   const [maxNumber, setMaxNumber] = useState(100)
   const [numberCount, setNumberCount] = useState(1)
   const [isNumberDrawing, setIsNumberDrawing] = useState(false)
+  const [isNumberStopping, setIsNumberStopping] = useState(false) // 新增：是否正在停止状态
   const [numberWinners, setNumberWinners] = useState<number[]>([])
   const [currentNumberIndex, setCurrentNumberIndex] = useState(-1)
-  const [rollingNumber, setRollingNumber] = useState(0)
+  const [rollingNumbers, setRollingNumbers] = useState<number[]>([])
   
   // 分页相关
   const [currentPage, setCurrentPage] = useState(1)
@@ -68,6 +72,7 @@ export default function LotteryPage() {
   const drawingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const displayIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const wheelSpinRef = useRef<NodeJS.Timeout | null>(null)
+  const powerChargingRef = useRef<NodeJS.Timeout | null>(null) // 新增：蓄力定时器引用
   const numberDrawingRef = useRef<NodeJS.Timeout | null>(null)
   const numberDisplayRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -238,6 +243,7 @@ export default function LotteryPage() {
     }
 
     if (winnerCount > participants.length) {
+      setWinnerCount(participants.length)
       return
     }
 
@@ -245,14 +251,39 @@ export default function LotteryPage() {
     setWinners([])
     setCurrentDisplayIndex(-1)
 
-    // 加快滚动速度，从100ms改为50ms
+    // 预先生成中奖者列表，确保不重复
+    const shuffled = [...participants]
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    const selectedWinners = shuffled.slice(0, winnerCount)
+    
+    // 保存中奖者到全局变量，供停止时使用
+    ;(window as any).selectedWinners = selectedWinners
+
+    // 滚动速度设置为100ms，确保不重复
     drawingIntervalRef.current = setInterval(() => {
-      const randomNames = Array.from({ length: winnerCount }, () => {
-        const randomIndex = Math.floor(Math.random() * participants.length)
-        return participants[randomIndex].name
-      })
+      // 滚动时只显示未中奖的参与者，确保不会与最终结果重复
+      const remainingParticipants = participants.filter(p => 
+        !selectedWinners.some(winner => winner.id === p.id)
+      )
+      
+      // 如果剩余参与者不够，则从所有参与者中随机选择
+      const availableParticipants = remainingParticipants.length >= winnerCount 
+        ? remainingParticipants 
+        : participants
+      
+      // 随机打乱可用参与者
+      const shuffled = [...availableParticipants]
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+      }
+      
+      const randomNames = shuffled.slice(0, winnerCount).map(p => p.name)
       setRollingNames(randomNames)
-    }, 50)
+    }, 100)
   }
 
   // 停止参与者抽奖
@@ -263,29 +294,75 @@ export default function LotteryPage() {
     }
 
     setIsDrawing(false)
-    setRollingNames([])
+    setIsStopping(true) // 设置停止状态
 
-    const shuffled = [...participants].sort(() => Math.random() - 0.5)
-    const selectedWinners = shuffled.slice(0, winnerCount)
+    // 获取预生成的中奖者
+    const selectedWinners = (window as any).selectedWinners || []
+    if (selectedWinners.length === 0) {
+      setIsStopping(false)
+      return
+    }
+    
     setWinners(selectedWinners)
 
-    setCurrentDisplayIndex(0)
-    let index = 0
-    displayIntervalRef.current = setInterval(() => {
-      if (index < selectedWinners.length - 1) {
-        index++
-        setCurrentDisplayIndex(index)
-      } else {
-        if (displayIntervalRef.current) {
-          clearInterval(displayIntervalRef.current)
-          displayIntervalRef.current = null
-        }
-      }
+    // 直接显示所有中奖者，不再滚动
+    setRollingNames(selectedWinners.map(w => w.name))
+    setCurrentDisplayIndex(selectedWinners.length - 1)
+    
+    // 1秒后完成停止
+    setTimeout(() => {
+      setIsStopping(false)
+      // 清理全局变量
+      delete (window as any).selectedWinners
     }, 1000)
   }
 
-  // 开始转盘抽奖
-  const startWheelSpin = () => {
+
+
+  // 开始蓄力
+  const startPowerCharging = () => {
+    if (prizes.length === 0 || isWheelSpinning || isPowerCharging) {
+      return
+    }
+    
+    setIsPowerCharging(true)
+    setWheelPower(0) // 重置力度
+    
+    // 开始蓄力，力度逐渐增加
+    const chargeInterval = setInterval(() => {
+      setWheelPower(prev => {
+        if (prev >= 100) {
+          clearInterval(chargeInterval)
+          return 100
+        }
+        return prev + 2 // 每50ms增加2点力度
+      })
+    }, 50)
+    
+    // 保存定时器引用到专门的蓄力定时器
+    powerChargingRef.current = chargeInterval
+  }
+
+  // 停止蓄力并开始转盘
+  const stopPowerCharging = () => {
+    if (!isPowerCharging) {
+      return
+    }
+    
+    setIsPowerCharging(false)
+    
+    // 清除蓄力定时器
+    if (powerChargingRef.current) {
+      clearInterval(powerChargingRef.current)
+      powerChargingRef.current = null
+    }
+    
+    // 开始转盘旋转
+    startWheelSpinWithPower()
+  }
+
+  // 根据力度开始转盘旋转
+  const startWheelSpinWithPower = () => {
     if (prizes.length === 0) {
       return
     }
@@ -310,7 +387,6 @@ export default function LotteryPage() {
     }
 
     // 计算转盘应该停止的角度
-    // 找到中奖奖品在转盘上的位置
     let accumulatedAngle = 0
     let targetAngle = 0
     
@@ -319,26 +395,34 @@ export default function LotteryPage() {
       const prizeAngle = (prize.weight / totalWeight) * 360
       
       if (prize.id === selectedPrize.id) {
-        // 指针指向该奖品区域的中间
         targetAngle = accumulatedAngle + (prizeAngle / 2)
         break
       }
       accumulatedAngle += prizeAngle
     }
 
-    // 计算转盘旋转角度
-    // 指针在顶部（-90度），需要让中奖奖品旋转到顶部
-    // 转盘顺时针旋转，所以需要减去目标角度
-    // 加上多圈旋转效果（1800度 = 5圈）
-    const finalRotation = wheelRotation + 1800 - targetAngle
+    // 根据力度计算转圈数 (5-10圈)
+    const minSpins = 5
+    const maxSpins = 10
+    const spinCount = minSpins + Math.floor((wheelPower / 100) * (maxSpins - minSpins))
+    const totalRotation = spinCount * 360
+
+    // 计算最终旋转角度
+    const finalRotation = wheelRotation + totalRotation - targetAngle
 
     setWheelRotation(finalRotation)
 
-    // 3秒后停止并显示结果
+    // 根据力度调整停止时间 (4-6秒)
+    const minDuration = 4000
+    const maxDuration = 6000
+    const stopDuration = minDuration + (wheelPower / 100) * (maxDuration - minDuration)
+
+    // 停止并显示结果
     wheelSpinRef.current = setTimeout(() => {
       setIsWheelSpinning(false)
       setWheelWinner(selectedPrize)
-    }, 3000)
+      // 不重置力度，让用户看到最终的力度值
+    }, stopDuration)
   }
 
   // 重置转盘
@@ -347,9 +431,15 @@ export default function LotteryPage() {
       clearTimeout(wheelSpinRef.current)
       wheelSpinRef.current = null
     }
+    if (powerChargingRef.current) {
+      clearInterval(powerChargingRef.current)
+      powerChargingRef.current = null
+    }
     setIsWheelSpinning(false)
+    setIsPowerCharging(false)
     setWheelWinner(null)
     setWheelRotation(0)
+    setWheelPower(0)
   }
 
   // 清空所有参与者
@@ -378,6 +468,7 @@ export default function LotteryPage() {
       displayIntervalRef.current = null
     }
     setIsDrawing(false)
+    setIsStopping(false) // 重置停止状态
     setWinners([])
     setCurrentDisplayIndex(-1)
     setRollingNames([])
@@ -394,26 +485,89 @@ export default function LotteryPage() {
     }
 
     setIsNumberDrawing(true)
+    setIsNumberStopping(false)
     setNumberWinners([])
     setCurrentNumberIndex(-1)
-    setRollingNumber(0)
+    setRollingNumbers([])
 
     // 生成不重复的随机数字
     const allNumbers = Array.from({ length: maxNumber - minNumber + 1 }, (_, i) => minNumber + i)
     const shuffled = [...allNumbers].sort(() => Math.random() - 0.5)
     const selectedNumbers = shuffled.slice(0, numberCount)
-    setNumberWinners(selectedNumbers)
 
-    // 开始第一个数字的滚动
-    setCurrentNumberIndex(0)
-    startNumberRolling(selectedNumbers[0])
+    // 开始持续滚动
+    startContinuousRolling(selectedNumbers)
+  }
+
+  // 开始持续滚动
+  const startContinuousRolling = (selectedNumbers: number[]) => {
+    // 保存选中的数字到全局变量，供停止时使用
+    ;(window as any).selectedNumbers = selectedNumbers
+    
+    // 初始化滚动数字数组
+    setRollingNumbers(Array.from({ length: numberCount }, () => 
+      Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber
+    ))
+    
+    // 开始持续滚动
+    numberDrawingRef.current = setInterval(() => {
+      setRollingNumbers(prev => prev.map(() => 
+        Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber
+      ))
+    }, 50)
+  }
+
+  // 开始逐个停止
+  const startSequentialStop = (selectedNumbers: number[], currentIndex: number) => {
+    // 停止当前数字的滚动，其他数字继续滚动
+    setRollingNumbers(prev => prev.map((_, index) => 
+      index === currentIndex ? selectedNumbers[currentIndex] : 
+      Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber
+    ))
+    
+    // 将当前数字添加到结果中
+    setNumberWinners(prev => [...prev, selectedNumbers[currentIndex]])
+    
+    // 继续其他数字的滚动
+    if (currentIndex < selectedNumbers.length - 1) {
+      numberDrawingRef.current = setInterval(() => {
+        setRollingNumbers(prev => prev.map((num, index) => 
+          index <= currentIndex ? selectedNumbers[index] : 
+          Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber
+        ))
+      }, 50)
+    }
+    
+    // 1秒后开始下一个数字
+    setTimeout(() => {
+      const nextIndex = currentIndex + 1
+      if (nextIndex < selectedNumbers.length) {
+        // 清除当前的滚动定时器
+        if (numberDrawingRef.current) {
+          clearInterval(numberDrawingRef.current)
+          numberDrawingRef.current = null
+        }
+        setCurrentNumberIndex(nextIndex)
+        startSequentialStop(selectedNumbers, nextIndex)
+      } else {
+        // 所有数字都显示完毕，重新启用按钮
+        if (numberDrawingRef.current) {
+          clearInterval(numberDrawingRef.current)
+          numberDrawingRef.current = null
+        }
+        setIsNumberDrawing(false)
+        setIsNumberStopping(false)
+      }
+    }, 1000)
   }
 
   // 开始数字滚动
-  const startNumberRolling = (targetNumber: number) => {
+  const startNumberRolling = (targetNumber: number, currentIndex: number, allSelectedNumbers: number[]) => {
     // 快速滚动效果
     numberDrawingRef.current = setInterval(() => {
-      setRollingNumber(Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber)
+      setRollingNumbers(prev => prev.map(() => 
+        Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber
+      ))
     }, 50)
 
     // 3秒后停止并显示目标数字
@@ -422,13 +576,20 @@ export default function LotteryPage() {
         clearInterval(numberDrawingRef.current)
         numberDrawingRef.current = null
       }
-      setRollingNumber(targetNumber)
+      setRollingNumbers(prev => prev.map((_, index) => 
+        index === currentIndex ? targetNumber : 
+        Math.floor(Math.random() * (maxNumber - minNumber + 1)) + minNumber
+      ))
+
+      // 将当前数字添加到结果中
+      setNumberWinners(prev => [...prev, targetNumber])
 
       // 1秒后开始下一个数字
       setTimeout(() => {
-        if (currentNumberIndex < numberWinners.length - 1) {
-          setCurrentNumberIndex(prev => prev + 1)
-          startNumberRolling(numberWinners[currentNumberIndex + 1])
+        const nextIndex = currentIndex + 1
+        if (nextIndex < allSelectedNumbers.length) {
+          setCurrentNumberIndex(nextIndex)
+          startNumberRolling(allSelectedNumbers[nextIndex], nextIndex, allSelectedNumbers)
         } else {
           // 所有数字都显示完毕
           setIsNumberDrawing(false)
@@ -447,7 +608,21 @@ export default function LotteryPage() {
       clearTimeout(numberDisplayRef.current)
       numberDisplayRef.current = null
     }
-    setIsNumberDrawing(false)
+    
+    // 设置停止状态，禁用按钮
+    setIsNumberStopping(true)
+    
+    // 获取选中的数字
+    const selectedNumbers = (window as any).selectedNumbers || []
+    if (selectedNumbers.length === 0) {
+      setIsNumberDrawing(false)
+      setIsNumberStopping(false)
+      return
+    }
+    
+    // 开始逐个停止，按钮变为禁用状态
+    setCurrentNumberIndex(0)
+    startSequentialStop(selectedNumbers, 0)
   }
 
   // 重置数字抽奖
@@ -461,9 +636,12 @@ export default function LotteryPage() {
       numberDisplayRef.current = null
     }
     setIsNumberDrawing(false)
+    setIsNumberStopping(false)
     setNumberWinners([])
     setCurrentNumberIndex(-1)
-    setRollingNumber(0)
+    setRollingNumbers([])
+    // 清理全局变量
+    delete (window as any).selectedNumbers
   }
 
   // 计算对比度颜色
@@ -485,28 +663,30 @@ export default function LotteryPage() {
   const renderWheel = () => {
     if (prizes.length === 0) {
       return (
-        <div className="w-[600px] h-[600px] max-w-full max-h-[70vh] mx-auto flex items-center justify-center border-4 border-gray-300 rounded-full bg-gray-100">
+        <div className="w-[480px] h-[480px] max-w-full max-h-[70vh] mx-auto flex items-center justify-center border-4 border-gray-300 rounded-full bg-gray-100">
           <span className="text-gray-500">请先添加奖品</span>
         </div>
       )
     }
 
     const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0)
-    const centerX = 300
-    const centerY = 300
-    const radius = 270
+    const centerX = 240
+    const centerY = 240
+    const radius = 216
 
     return (
-      <div className="relative w-[600px] h-[600px] max-w-full max-h-[70vh] mx-auto">
+      <div className="relative w-[480px] h-[480px] max-w-full max-h-[70vh] mx-auto">
         {/* 转盘 */}
         <div 
-          className="w-full h-full rounded-full border-4 border-gray-800 transition-transform duration-3000 ease-out relative"
+          className="w-full h-full rounded-full border-4 border-gray-800 transition-transform ease-out relative"
           style={{ 
             transform: `rotate(${wheelRotation}deg)`,
-            transitionDuration: isWheelSpinning ? '3000ms' : '0ms'
+            transitionDuration: isWheelSpinning 
+              ? `${Math.max(4000, 4000 + (wheelPower / 100) * 2000)}ms` 
+              : '0ms'
           }}
         >
-          <svg viewBox="0 0 600 600" className="w-full h-full">
+          <svg viewBox="0 0 480 480" className="w-full h-full" style={{ pointerEvents: 'none' }}>
             {prizes.map((prize, index) => {
               // 计算当前奖品的角度
               let accumulatedAngle = 0
@@ -585,9 +765,9 @@ export default function LotteryPage() {
           <div className="relative">
             <div 
               className="w-2 bg-red-600 absolute left-1/2 transform -translate-x-1/2"
-              style={{ height: '135px', top: '-135px' }}
+              style={{ height: '108px', top: '-108px' }}
             ></div>
-            <div className="w-0 h-0 border-l-6 border-r-6 border-b-12 border-l-transparent border-r-transparent border-b-red-600 absolute left-1/2 transform -translate-x-1/2" style={{ top: '-135px' }}></div>
+            <div className="w-0 h-0 border-l-6 border-r-6 border-b-12 border-l-transparent border-r-transparent border-b-red-600 absolute left-1/2 transform -translate-x-1/2" style={{ top: '-108px' }}></div>
             <div className="w-6 h-6 bg-red-600 rounded-full absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
           </div>
         </div>
@@ -606,6 +786,9 @@ export default function LotteryPage() {
       }
       if (wheelSpinRef.current) {
         clearTimeout(wheelSpinRef.current)
+      }
+      if (powerChargingRef.current) {
+        clearInterval(powerChargingRef.current)
       }
       if (numberDrawingRef.current) {
         clearInterval(numberDrawingRef.current)
@@ -845,15 +1028,22 @@ export default function LotteryPage() {
                       min="1"
                       max={participants.length}
                       value={winnerCount}
-                      onChange={(e) => setWinnerCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 1
+                        const maxValue = Math.min(value, participants.length)
+                        setWinnerCount(Math.max(1, maxValue))
+                      }}
                     />
+                    <div className="text-sm text-gray-500">
+                      可选范围：1 - {participants.length}（总人数）
+                    </div>
                   </div>
                   
                   <div className="flex gap-2">
                     {!isDrawing ? (
                       <Button 
                         onClick={startDraw} 
-                        disabled={participants.length === 0}
+                        disabled={participants.length === 0 || isStopping}
                         className="flex-1"
                       >
                         <Play className="w-4 h-4 mr-2" />
@@ -865,7 +1055,7 @@ export default function LotteryPage() {
                         停止抽奖
                       </Button>
                     )}
-                    <Button variant="outline" onClick={resetDraw}>
+                    <Button variant="outline" onClick={resetDraw} disabled={isStopping}>
                       重置
                     </Button>
                   </div>
@@ -878,18 +1068,25 @@ export default function LotteryPage() {
                   <CardTitle>抽奖结果</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {isDrawing ? (
+                  {isDrawing || isStopping ? (
                     <div className="space-y-4">
                       <div className="text-center text-lg font-semibold text-blue-600 mb-4">
-                        抽奖进行中...
+                        {isDrawing ? '抽奖进行中...' : '抽奖停止中...'}
                       </div>
                       <div className="space-y-2">
                         {rollingNames.map((name, index) => (
                           <div
                             key={index}
-                            className="p-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg text-center font-bold text-lg animate-pulse"
+                            className={`p-4 rounded-lg text-center font-bold text-lg transition-all duration-500 ${
+                              isStopping && index <= currentDisplayIndex
+                                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white transform scale-105'
+                                : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white animate-pulse'
+                            }`}
                           >
-                            {name}
+                            <div className="flex items-center justify-center gap-2">
+                              <Badge variant="secondary">第{index + 1}名</Badge>
+                              <span>{name}</span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -903,11 +1100,7 @@ export default function LotteryPage() {
                         {winners.map((winner, index) => (
                           <div
                             key={winner.id}
-                            className={`p-4 rounded-lg text-center font-bold text-lg transition-all duration-500 ${
-                              index <= currentDisplayIndex
-                                ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white transform scale-105'
-                                : 'bg-gray-200 text-gray-400'
-                            }`}
+                            className="p-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg text-center font-bold text-lg"
                           >
                             <div className="flex items-center justify-center gap-2">
                               <Badge variant="secondary">第{index + 1}名</Badge>
@@ -1024,18 +1217,43 @@ export default function LotteryPage() {
                     </div>
                     
                     {/* 转盘控制按钮 */}
-                    <div className="flex gap-4 w-full max-w-md">
-                      <Button 
-                        onClick={startWheelSpin} 
-                        disabled={prizes.length === 0 || isWheelSpinning}
-                        className="flex-1"
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        {isWheelSpinning ? '转盘转动中...' : '开始抽奖'}
-                      </Button>
-                      <Button variant="outline" onClick={resetWheel}>
-                        重置
-                      </Button>
+                    <div className="flex flex-col gap-4 w-full max-w-md">
+                      <div className="flex gap-4">
+                        <Button 
+                          onMouseDown={startPowerCharging}
+                          onMouseUp={stopPowerCharging}
+                          onMouseLeave={stopPowerCharging}
+                          onTouchStart={startPowerCharging}
+                          onTouchEnd={stopPowerCharging}
+                          disabled={prizes.length === 0 || isWheelSpinning}
+                          className="flex-1"
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          {isWheelSpinning ? '转盘转动中...' : isPowerCharging ? '蓄力中...' : '按住开始抽奖'}
+                        </Button>
+                        <Button variant="outline" onClick={resetWheel}>
+                          重置
+                        </Button>
+                      </div>
+                      
+                      {/* 力度进度条 */}
+                      {(isPowerCharging || wheelPower > 0) && (
+                        <div className="w-full space-y-2">
+                          <div className="flex justify-between text-sm text-gray-600">
+                            <span>力度</span>
+                            <span>{Math.round(wheelPower)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-100 ease-out rounded-full"
+                              style={{ width: `${wheelPower}%` }}
+                            />
+                          </div>
+                          <div className="text-xs text-gray-500 text-center">
+                            {wheelPower < 30 ? '轻力' : wheelPower < 70 ? '中力' : '大力'}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -1109,7 +1327,7 @@ export default function LotteryPage() {
                         开始抽奖
                       </Button>
                     ) : (
-                      <Button onClick={stopNumberDraw} variant="destructive" className="flex-1">
+                      <Button onClick={stopNumberDraw} variant="destructive" className="flex-1" disabled={isNumberStopping}>
                         <Square className="w-4 h-4 mr-2" />
                         停止抽奖
                       </Button>
@@ -1148,10 +1366,10 @@ export default function LotteryPage() {
                               <Badge variant="secondary">第{index + 1}个</Badge>
                               <span>
                                 {index === currentNumberIndex 
-                                  ? rollingNumber 
+                                  ? rollingNumbers[index] || '?'
                                   : index < currentNumberIndex 
                                     ? numberWinners[index] 
-                                    : '?'
+                                    : rollingNumbers[index] || '?'
                                 }
                               </span>
                             </div>
