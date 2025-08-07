@@ -1,27 +1,5 @@
 import Link from "next/link"
-import {
-  FileText,
-  ImageIcon,
-  QrCode,
-  Key,
-  Clock,
-  Code,
-  Palette,
-  FileJson,
-  Lock,
-  Pipette,
-  Search,
-  Diff,
-  BarChart4,
-  Layers,
-  Cpu,
-  Hash,
-  Monitor,
-  ArrowLeftRight,
-  Heart,
-  Github,
-  Globe,
-} from "lucide-react"
+import { FileText, ImageIcon, QrCode, Key, Clock, Code, Palette, FileJson, Lock, Pipette, Search, Diff, BarChart4, Layers, Cpu, Hash, Monitor, ArrowLeftRight, Heart, Github, Globe, Gift } from 'lucide-react'
 
 export default function Home() {
   // 工具列表
@@ -165,6 +143,13 @@ export default function Home() {
       href: "/ip-info",
       icon: <Globe className="w-4 h-4" />,
       color: "bg-emerald-100 text-emerald-600",
+    },
+    {
+      name: "抽奖程序",
+      description: "支持导入名单、设置中奖人数的抽奖工具",
+      href: "/lottery",
+      icon: <Gift className="w-4 h-4" />,
+      color: "bg-yellow-100 text-yellow-600",
     },
   ]
 

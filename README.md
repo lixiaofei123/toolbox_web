@@ -47,18 +47,18 @@
 
 ### Docker部署
 
-```
+\`\`\`
 docker run -d -p 8080:8080 mrlee326/toolbox_web:latest
-```
+\`\`\`
 
 
 中国用户
 
 Chinese User
 
-```
+\`\`\`
 docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
-```
+\`\`\`
 
 ---
 
@@ -114,4 +114,4 @@ docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
 ---
 
 > 本项目由 [v0.dev](https://v0.dev/) AI 生成，致力于为用户提供安全、便捷的在线工具体验。
-> 
+>

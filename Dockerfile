@@ -14,10 +14,8 @@ RUN npm install
 # 复制源代码
 COPY . .
 
-COPY next.config.mjs.docker next.config.mjs
-
 # 构建应用
-RUN NEXT_STATIC_EXPORT=true npm run build
+RUN npm run build
 
 # 第二阶段：生产阶段
 FROM node:18-alpine AS production
