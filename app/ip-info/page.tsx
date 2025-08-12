@@ -350,7 +350,14 @@ export default function IPInfoPage() {
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="h-96 w-full rounded-b-lg overflow-hidden">
-                      <img className="w-full h-full object-cover object-center" src={`https://apis.map.qq.com/ws/staticmap/v2/?center=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&zoom=10&markers=color:blue%7Clabel:A%7C${ipInfo.geo.latitude},${ipInfo.geo.longitude}&key=2FPBZ-ZVUC4-2N6US-XWG2G-ITSJO-FZBOO&size=800*600`} />
+                      <iframe
+                        src={`https://api.map.baidu.com/marker?location=${ipInfo.geo.latitude},${ipInfo.geo.longitude}&title=我的位置&&output=html&src=webapp.baidu.openAPIdemo`}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        loading="lazy"
+                        title="位置地图"
+                      />
                     </div>
                   </CardContent>
                 </Card>

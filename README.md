@@ -37,7 +37,6 @@
 
 
 > 推荐使用 Tencent EdgeOne Pages 部署，IP信息查询依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能
-> ipinfo界面的地图显示，需要自己去https://lbs.qq.com/dev/console/home 网站上注册一个应用，设置好域名白名单，然后去在代码仓库的app/ip-info/page.tsx文件中搜索一下apis.map.qq.com，然后替换一下对应的key。默认的key我设置了白名单，只能在https://tool.lixf.ink/域名下使用
 
 ### 部署到Vercel
 
