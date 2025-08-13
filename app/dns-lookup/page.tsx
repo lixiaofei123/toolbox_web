@@ -191,7 +191,7 @@ export default function DNSLookupPage() {
               <h1 className="text-3xl font-bold text-gray-900">DNS 查询工具</h1>
             </div>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              使用阿里云 DNS over HTTPS 服务查询域名解析记录，支持 A、AAAA、TXT、CNAME、MX、NS、SRV、CAA 记录类型
+              域名解析记录查询，支持 A、AAAA、TXT、CNAME、MX、NS、SRV、CAA 记录类型
             </p>
           </div>
 
