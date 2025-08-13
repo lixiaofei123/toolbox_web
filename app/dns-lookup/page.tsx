@@ -44,6 +44,9 @@ const DNS_TYPES = {
   TXT: 16,
   CNAME: 5,
   MX: 15,
+  NS: 2,
+  SRV: 33,
+  CAA: 257,
 }
 
 const TYPE_NAMES: { [key: number]: string } = {
@@ -52,6 +55,9 @@ const TYPE_NAMES: { [key: number]: string } = {
   16: "TXT",
   5: "CNAME",
   15: "MX",
+  2: "NS",
+  33: "SRV",
+  257: "CAA",
 }
 
 export default function DNSLookupPage() {
@@ -185,7 +191,7 @@ export default function DNSLookupPage() {
               <h1 className="text-3xl font-bold text-gray-900">DNS 查询工具</h1>
             </div>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              使用阿里云 DNS over HTTPS 服务查询域名解析记录，支持 A、AAAA、TXT、CNAME、MX 记录类型
+              使用阿里云 DNS over HTTPS 服务查询域名解析记录，支持 A、AAAA、TXT、CNAME、MX、NS、SRV、CAA 记录类型
             </p>
           </div>
 
@@ -297,7 +303,7 @@ export default function DNSLookupPage() {
               <CardTitle className="text-lg">支持的记录类型</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="flex items-center gap-3">
                   <Badge variant="outline">A</Badge>
                   <span className="text-sm text-gray-600">IPv4 地址记录</span>
@@ -317,6 +323,18 @@ export default function DNSLookupPage() {
                 <div className="flex items-center gap-3">
                   <Badge variant="outline">MX</Badge>
                   <span className="text-sm text-gray-600">邮件交换记录</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline">NS</Badge>
+                  <span className="text-sm text-gray-600">域名服务器记录</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline">SRV</Badge>
+                  <span className="text-sm text-gray-600">服务记录</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="outline">CAA</Badge>
+                  <span className="text-sm text-gray-600">证书颁发机构记录</span>
                 </div>
               </div>
             </CardContent>
