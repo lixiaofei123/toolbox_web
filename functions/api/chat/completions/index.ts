@@ -1,5 +1,4 @@
 export async function onRequest({ request }) {
-
     const browserLikeHeaders = {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/plain, */*',
@@ -16,6 +15,7 @@ export async function onRequest({ request }) {
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': '*',
+        'Access-Control-Allow-Headers': '*',
         'Access-Control-Max-Age': '86400'
     };
 
@@ -26,7 +26,7 @@ export async function onRequest({ request }) {
         });
     }
 
-    const body = await request.json()
+    const body = await request.json();
 
     const upstreamResponse = await fetch('https://cnb.cool/ai/chat/completions', {
         method: 'POST',
@@ -34,6 +34,12 @@ export async function onRequest({ request }) {
         body: JSON.stringify(body)
     });
 
+    // 拷贝上游响应头，并删除冲突的 CORS 头
+    const upstreamHeaders = new Headers(upstreamResponse.headers);
+    upstreamHeaders.delete('access-control-allow-origin');
+    upstreamHeaders.delete('access-control-allow-methods');
+    upstreamHeaders.delete('access-control-allow-headers');
+    upstreamHeaders.delete('access-control-max-age');
 
     if (body.stream === true) {
         // 流式响应
@@ -42,7 +48,7 @@ export async function onRequest({ request }) {
         return new Response(readable, {
             status: upstreamResponse.status,
             headers: {
-                ...Object.fromEntries(upstreamResponse.headers),
+                ...Object.fromEntries(upstreamHeaders),
                 ...corsHeaders
             }
         });
@@ -52,10 +58,9 @@ export async function onRequest({ request }) {
         return new Response(text, {
             status: upstreamResponse.status,
             headers: {
-                ...Object.fromEntries(upstreamResponse.headers),
+                ...Object.fromEntries(upstreamHeaders),
                 ...corsHeaders
             }
         });
     }
 }
-
