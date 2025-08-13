@@ -1,4 +1,4 @@
-async function onRequest({ request }) {
+export async function onRequest({ request }) {
 
     const browserLikeHeaders = {
         'Content-Type': 'application/json',
