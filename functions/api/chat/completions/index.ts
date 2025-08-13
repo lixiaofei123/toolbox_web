@@ -31,7 +31,14 @@ export async function onRequest({ request }) {
     const upstreamResponse = await fetch('https://cnb.cool/ai/chat/completions', {
         method: 'POST',
         headers: browserLikeHeaders,
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        eo: {
+            timeoutSetting: {
+                connectTimeout: 300000,  
+                readTimeout: 300000, 
+                writeTimeout: 300000,  
+            }
+        }
     });
 
     // 拷贝上游响应头，并删除冲突的 CORS 头
