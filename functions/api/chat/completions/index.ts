@@ -1,6 +1,4 @@
-async function onRequestPost({ request }) {
-
-    const body = await request.json()
+async function onRequest({ request }) {
 
     const browserLikeHeaders = {
         'Content-Type': 'application/json',
@@ -17,10 +15,18 @@ async function onRequestPost({ request }) {
 
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': '*',
         'Access-Control-Max-Age': '86400'
     };
+
+    if (request.method === "OPTIONS") {
+        return new Response(null, {
+            status: 204,
+            headers: corsHeaders
+        });
+    }
+
+    const body = await request.json()
 
     const upstreamResponse = await fetch('https://cnb.cool/ai/chat/completions', {
         method: 'POST',
