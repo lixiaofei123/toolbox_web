@@ -49,18 +49,18 @@
 
 ### Docker部署
 
-```
+\`\`\`
 docker run -d -p 8080:8080 mrlee326/toolbox_web:latest
-```
+\`\`\`
 
 
 中国用户
 
 Chinese User
 
-```
+\`\`\`
 docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
-```
+\`\`\`
 
 ---
 

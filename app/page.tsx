@@ -1,5 +1,29 @@
 import Link from "next/link"
-import { FileText, ImageIcon, QrCode, Key, Clock, Code, Palette, FileJson, Lock, Pipette, Search, Diff, BarChart4, Layers, Cpu, Hash, Monitor, ArrowLeftRight, Heart, Github, Globe, Gift } from 'lucide-react'
+import {
+  FileText,
+  ImageIcon,
+  QrCode,
+  Key,
+  Clock,
+  Code,
+  Palette,
+  FileJson,
+  Lock,
+  Pipette,
+  Search,
+  Diff,
+  BarChart4,
+  Layers,
+  Cpu,
+  Hash,
+  Monitor,
+  ArrowLeftRight,
+  Heart,
+  Github,
+  Globe,
+  Gift,
+  Network,
+} from "lucide-react"
 
 export default function Home() {
   // 工具列表
@@ -150,6 +174,13 @@ export default function Home() {
       href: "/lottery",
       icon: <Gift className="w-4 h-4" />,
       color: "bg-yellow-100 text-yellow-600",
+    },
+    {
+      name: "DNS 查询工具",
+      description: "查询域名解析记录，支持多种记录类型",
+      href: "/dns-lookup",
+      icon: <Network className="w-4 h-4" />,
+      color: "bg-cyan-100 text-cyan-600",
     },
   ]
 
