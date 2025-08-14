@@ -1,5 +1,6 @@
 export async function onRequest({ request }) {
 
+    request.headers.delete('accept-encoding');
 
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
@@ -19,6 +20,7 @@ export async function onRequest({ request }) {
     const upstreamResponse = await fetch('https://cnb.cool/ai/chat/completions', {
         method: 'POST',
         body: request.body,
+        redirect: 'follow',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
