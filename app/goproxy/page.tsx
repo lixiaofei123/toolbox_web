@@ -88,7 +88,7 @@ export default function GoProxyPage() {
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>重要提示：</strong>此代理服务只有在工具部署到 EdgeOne Pages 上时才能正常使用。
-                    如果您在其他平台使用，代理功能可能无法正常工作。访问<a href="https://github.com/lixiaofei123/toolbox_web" target="blank">https://github.com/lixiaofei123/toolbox_web</a>查看如何部署
+                    如果您在其他平台使用，代理功能可能无法正常工作。访问<a href="https://github.com/lixiaofei123/toolbox_web" target="blank">https://github.com/lixiaofei123/toolbox_web</a>查看如何部署 
                   </AlertDescription>
                 </Alert>
               </CardContent>
