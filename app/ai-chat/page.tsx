@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
@@ -70,11 +70,12 @@ export default function AIChatPage() {
     initializeBasePath()
   }, [])
 
-  useEffect(() => {
-    if (basePath) {
-      fetchModels(basePath)
-    }
-  }, [basePath])
+  // 移除对 basePath 的监听，避免输入时频繁请求
+  // useEffect(() => {
+  //   if (basePath) {
+  //     fetchModels(basePath)
+  //   }
+  // }, [basePath])
 
   // 获取模型列表
   const fetchModels = async (baseUrl: string) => {
@@ -380,7 +381,7 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                   value={basePath}
                   onChange={(e) => setBasePath(e.target.value)}
                   onBlur={(e) => {
-                    if (e.target.value && e.target.value !== basePath) {
+                    if (e.target.value) {
                       fetchModels(e.target.value)
                     }
                   }}
