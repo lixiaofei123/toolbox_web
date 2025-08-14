@@ -236,7 +236,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center gap-6 text-sm text-gray-600">
-              <span>© 2024 在线工具箱</span>
+              <span>© 2025 在线工具箱</span>
               <div className="flex items-center gap-4">
                 <a
                   href="https://github.com/lixiaofei123/toolbox_web"
