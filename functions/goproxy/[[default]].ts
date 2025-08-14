@@ -10,7 +10,8 @@ export async function onRequest({ request }) {
     const subpath = pathname.slice(prefix.length)
 
     if (subpath.startsWith("sumdb")) {
-        const response = await fetch(`${sumdb_url}/${subpath}`);
+        const sumdbPath = subpath.replace("sumdb/", "");
+        const response = await fetch(`${sumdb_url}/${sumdbPath}`);
         return response
     } else {
         const response = await fetch(`${go_proxy_upstream}/${subpath}`);
