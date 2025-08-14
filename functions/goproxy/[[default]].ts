@@ -10,6 +10,9 @@ export async function onRequest({ request }) {
 
     if (subpath.startsWith("sumdb")) {
         const sumdbPath = subpath.replace("sumdb/", "");
+        if(sumdbPath.endsWith("/supported")){
+            return new Response("ok")
+        }
         const response = await fetch(`https://${sumdbPath}`);
         return response
     } else {
