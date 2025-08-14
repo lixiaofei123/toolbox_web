@@ -19,6 +19,10 @@ export async function onRequest({ request }) {
     const upstreamResponse = await fetch('https://cnb.cool/ai/chat/completions', {
         method: 'POST',
         body: request.body,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         eo: {
             timeoutSetting: {
                 connectTimeout: 300000,
