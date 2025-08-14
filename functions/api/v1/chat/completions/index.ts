@@ -1,4 +1,5 @@
 export async function onRequest({ request }) {
+
     const browserLikeHeaders = {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/plain, */*',
@@ -34,30 +35,21 @@ export async function onRequest({ request }) {
         body: JSON.stringify(body),
         eo: {
             timeoutSetting: {
-                connectTimeout: 300000,  
-                readTimeout: 300000, 
-                writeTimeout: 300000,  
+                connectTimeout: 300000,
+                readTimeout: 300000,
+                writeTimeout: 300000,
             }
         }
     });
 
-    // 拷贝上游响应头，并删除冲突的 CORS 头
-    const upstreamHeaders = new Headers(upstreamResponse.headers);
-    upstreamHeaders.delete('access-control-allow-origin');
-    upstreamHeaders.delete('access-control-allow-methods');
-    upstreamHeaders.delete('access-control-allow-headers');
-    upstreamHeaders.delete('access-control-max-age');
-
     if (body.stream === true) {
-        // 流式响应
-        const { readable, writable } = new TransformStream();
-        upstreamResponse.body.pipeTo(writable);
-        return new Response(readable, {
+        return new Response(upstreamResponse.body, {
             status: upstreamResponse.status,
             headers: {
-                ...Object.fromEntries(upstreamHeaders),
+                'Content-Type': upstreamResponse.headers.get('Content-Type') || 'application/octet-stream',
+                'Cache-Control': 'no-store',
                 ...corsHeaders
-            }
+            },
         });
     } else {
         // 非流式响应
@@ -65,7 +57,8 @@ export async function onRequest({ request }) {
         return new Response(text, {
             status: upstreamResponse.status,
             headers: {
-                ...Object.fromEntries(upstreamHeaders),
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-store',
                 ...corsHeaders
             }
         });
