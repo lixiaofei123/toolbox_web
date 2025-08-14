@@ -81,7 +81,7 @@ export default function RegexTesterPage() {
   const useCommonRegex = (regex: { name: string; pattern: string; description: string }) => {
     setPattern(regex.pattern)
     toast({
-      title: "已应用",
+      title: "已应��",
       description: `已应用 ${regex.name} 正则表达式`,
     })
   }

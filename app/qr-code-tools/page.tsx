@@ -57,7 +57,7 @@ export default function QrCodeTools() {
   // 使用 qrcode.js 库生成真正的二维码
   const generateQR = async () => {
     if (!qrText.trim()) {
-      setError("请输入要生成二维码的内容")
+      setError("请输入要生成二维码���内容")
       return
     }
 
