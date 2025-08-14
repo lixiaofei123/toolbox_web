@@ -1,5 +1,6 @@
 
 const go_proxy_upstream = "https://proxy.golang.org"
+const sumdb_url = "https://sum.golang.org"
 const prefix = "/goproxy/";
 
 export async function onRequest({ request }) {
@@ -8,15 +9,22 @@ export async function onRequest({ request }) {
     const { pathname } = new URL(srcurl);
     const subpath = pathname.slice(prefix.length)
 
-    const response = await fetch(`${go_proxy_upstream}/${subpath}`);
+    if (subpath.startsWith("/sumdb")) {
+        const response = await fetch(`${sumdb_url}/${subpath}`);
+        return response
+    } else {
+        const response = await fetch(`${go_proxy_upstream}/${subpath}`);
 
-    if (response.status !== 200) {
-        return response;
+        if (response.status !== 200) {
+            return response;
+        }
+
+        // 生成可读端与可写端
+        const { readable, writable } = new TransformStream();
+        // 流式响应客户端
+        response.body.pipeTo(writable);
+        return new Response(readable, response);
     }
 
-    // 生成可读端与可写端
-    const { readable, writable } = new TransformStream();
-    // 流式响应客户端
-    response.body.pipeTo(writable);
-    return new Response(readable, response);
+
 }
