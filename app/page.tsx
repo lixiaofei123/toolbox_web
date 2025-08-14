@@ -186,7 +186,7 @@ export default function Home() {
     {
       name: "GOPROXY 代理",
       description: "Go 模块代理服务，加速依赖下载",
-      href: "/goproxy",
+      href: "/go-proxy",
       icon: <Package className="w-4 h-4" />,
       color: "bg-green-100 text-green-600",
     },
