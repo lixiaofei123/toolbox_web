@@ -1,4 +1,3 @@
-
 const go_proxy_upstream = "https://proxy.golang.org"
 const prefix = "/goproxy/";
 
