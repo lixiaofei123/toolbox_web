@@ -9,7 +9,7 @@ export async function onRequest({ request }) {
     const { pathname } = new URL(srcurl);
     const subpath = pathname.slice(prefix.length)
 
-    if (subpath.startsWith("/sumdb")) {
+    if (subpath.startsWith("sumdb")) {
         const response = await fetch(`${sumdb_url}/${subpath}`);
         return response
     } else {
