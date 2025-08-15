@@ -64,9 +64,9 @@ export async function onRequest({ request}) {
     // }
 
     let resp = await fetch(newReq);
-    if (resp.status == 401) {
-        return responseUnauthorized(url);
-    }
+    // if (resp.status == 401) {
+    //     return responseUnauthorized(url);
+    // }
 
     // if (resp.status == 307) {
     //     const location = new URL(resp.headers.get("Location"));
