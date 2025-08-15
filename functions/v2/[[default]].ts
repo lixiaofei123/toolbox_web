@@ -37,13 +37,13 @@ export async function onRequest({ request}) {
 
     // redirect for DockerHub library images
     // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
-    const pathParts = url.pathname.split("/");
-    if (pathParts.length == 5) {
-        pathParts.splice(2, 0, "library");
-        const redirectUrl = new URL(url);
-        redirectUrl.pathname = pathParts.join("/");
-        return Response.redirect(redirectUrl, 301);
-    }
+    // const pathParts = url.pathname.split("/");
+    // if (pathParts.length == 5) {
+    //     pathParts.splice(2, 0, "library");
+    //     const redirectUrl = new URL(url);
+    //     redirectUrl.pathname = pathParts.join("/");
+    //     return Response.redirect(redirectUrl, 301);
+    // }
 
   //  const newUrl = new URL();
     const newReq = new Request(dockerHubUrl + url.pathname, {
