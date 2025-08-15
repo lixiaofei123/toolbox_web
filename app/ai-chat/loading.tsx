@@ -16,15 +16,9 @@ export default function Loading() {
 
       {/* 主要内容骨架 */}
       <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gray-200 rounded-full mx-auto mb-4 animate-pulse"></div>
-          <div className="w-32 h-8 bg-gray-200 rounded mx-auto mb-2 animate-pulse"></div>
-          <div className="w-64 h-4 bg-gray-200 rounded mx-auto animate-pulse"></div>
-        </div>
-
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
           {/* 聊天区域骨架 */}
-          <div className="h-96 mb-4 space-y-4">
+          <div className="h-[600px] mb-4 space-y-4">
             <div className="flex justify-start">
               <div className="w-3/4 h-12 bg-gray-200 rounded-lg animate-pulse"></div>
             </div>

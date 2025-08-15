@@ -1,15 +1,20 @@
 "use client"
 
-import React from "react"
+import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft, Send, Bot, User, Settings, Info, Copy, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import ReactMarkdown from "react-markdown"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism"
+import remarkGfm from "remark-gfm"
 
 interface Message {
   role: "user" | "assistant"
@@ -260,11 +265,25 @@ export default function AIChatPage() {
     }
   }
 
-  // 处理键盘事件
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter") {
+      if (e.ctrlKey || e.shiftKey) {
+        e.preventDefault()
+        const target = e.target as HTMLTextAreaElement
+        const start = target.selectionStart
+        const end = target.selectionEnd
+        const newValue = input.substring(0, start) + "\n" + input.substring(end)
+        setInput(newValue)
+
+        // 设置光标位置到换行符后面
+        setTimeout(() => {
+          target.selectionStart = target.selectionEnd = start + 1
+        }, 0)
+      } else {
+        // 单独 Enter 发送消息
+        e.preventDefault()
+        sendMessage()
+      }
     }
   }
 
@@ -319,15 +338,6 @@ curl -X POST "${basePath}/v1/chat/completions" \\
       </div>
 
       <div className="max-w-4xl mx-auto p-6">
-        {/* 页面头部 */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Bot className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold mb-2">AI 聊天助手</h1>
-          <p className="text-gray-600">与 AI 进行智能对话，支持多种模型和流式响应</p>
-        </div>
-
         {/* API 信息面板 */}
         {showApiInfo && (
           <Card className="mb-6">
@@ -399,7 +409,7 @@ curl -X POST "${basePath}/v1/chat/completions" \\
         <Card className="shadow-lg border-0">
           <CardContent className="p-0">
             {/* 聊天消息区域 */}
-            <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+            <div className="h-[600px] overflow-y-auto p-6 space-y-4">
               {messages.length === 0 && (
                 <div className="text-center text-gray-500 mt-20">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -451,7 +461,6 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                                 </div>
                               )}
 
-                              {/* 回答部分 */}
                               {answerContent && (
                                 <div className={thinkContent ? "mt-3" : ""}>
                                   {thinkContent && (
@@ -462,16 +471,101 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                                       </span>
                                     </div>
                                   )}
-                                  <div className="whitespace-pre-wrap leading-relaxed text-gray-800">
-                                    {answerContent}
+                                  <div className="prose prose-sm max-w-none text-gray-800">
+                                    <ReactMarkdown
+                                      remarkPlugins={[remarkGfm]}
+                                      components={{
+                                        code({ node, inline, className, children, ...props }) {
+                                          const match = /language-(\w+)/.exec(className || "")
+                                          return !inline && match ? (
+                                            <SyntaxHighlighter
+                                              style={tomorrow}
+                                              language={match[1]}
+                                              PreTag="div"
+                                              className="rounded-md"
+                                              {...props}
+                                            >
+                                              {String(children).replace(/\n$/, "")}
+                                            </SyntaxHighlighter>
+                                          ) : (
+                                            <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
+                                              {children}
+                                            </code>
+                                          )
+                                        },
+                                        table({ children }) {
+                                          return (
+                                            <div className="overflow-x-auto">
+                                              <table className="min-w-full border-collapse border border-gray-300">
+                                                {children}
+                                              </table>
+                                            </div>
+                                          )
+                                        },
+                                        th({ children }) {
+                                          return (
+                                            <th className="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold">
+                                              {children}
+                                            </th>
+                                          )
+                                        },
+                                        td({ children }) {
+                                          return <td className="border border-gray-300 px-4 py-2">{children}</td>
+                                        },
+                                      }}
+                                    >
+                                      {answerContent}
+                                    </ReactMarkdown>
                                   </div>
                                 </div>
                               )}
 
-                              {/* 兼容没有标签的回复 */}
                               {!thinkContent && !answerContent && (
-                                <div className="whitespace-pre-wrap leading-relaxed text-gray-800">
-                                  {message.content}
+                                <div className="prose prose-sm max-w-none text-gray-800">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      code({ node, inline, className, children, ...props }) {
+                                        const match = /language-(\w+)/.exec(className || "")
+                                        return !inline && match ? (
+                                          <SyntaxHighlighter
+                                            style={tomorrow}
+                                            language={match[1]}
+                                            PreTag="div"
+                                            className="rounded-md"
+                                            {...props}
+                                          >
+                                            {String(children).replace(/\n$/, "")}
+                                          </SyntaxHighlighter>
+                                        ) : (
+                                          <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
+                                            {children}
+                                          </code>
+                                        )
+                                      },
+                                      table({ children }) {
+                                        return (
+                                          <div className="overflow-x-auto">
+                                            <table className="min-w-full border-collapse border border-gray-300">
+                                              {children}
+                                            </table>
+                                          </div>
+                                        )
+                                      },
+                                      th({ children }) {
+                                        return (
+                                          <th className="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold">
+                                            {children}
+                                          </th>
+                                        )
+                                      },
+                                      td({ children }) {
+                                        return <td className="border border-gray-300 px-4 py-2">{children}</td>
+                                      },
+                                    }}
+                                  >
+                                    {message.content}
+                                  </ReactMarkdown>
                                 </div>
                               )}
 
@@ -487,7 +581,35 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                         })()}
                       </div>
                     )}
-                    {message.role !== "assistant" && <p className="whitespace-pre-wrap">{message.content}</p>}
+                    {message.role !== "assistant" && (
+                      <div className="prose prose-sm max-w-none text-white">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code({ node, inline, className, children, ...props }) {
+                              const match = /language-(\w+)/.exec(className || "")
+                              return !inline && match ? (
+                                <SyntaxHighlighter
+                                  style={tomorrow}
+                                  language={match[1]}
+                                  PreTag="div"
+                                  className="rounded-md"
+                                  {...props}
+                                >
+                                  {String(children).replace(/\n$/, "")}
+                                </SyntaxHighlighter>
+                              ) : (
+                                <code className="bg-white/20 px-1 py-0.5 rounded text-sm" {...props}>
+                                  {children}
+                                </code>
+                              )
+                            },
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
 
                   {message.role === "user" && (
@@ -522,37 +644,39 @@ curl -X POST "${basePath}/v1/chat/completions" \\
               <div ref={messagesEndRef} />
             </div>
 
-            {/* 在输入区域添加模型选择器 */}
             <div className="border-t border-gray-200 p-4">
-              <div className="flex gap-2">
-                <Input
+              <div className="relative">
+                <Textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="输入您的消息..."
+                  onKeyDown={handleKeyPress}
+                  placeholder="输入您的消息... (Enter发送，Ctrl+Enter或Shift+Enter换行)"
                   disabled={isLoading || !selectedModel}
-                  className="flex-1"
+                  className="w-full min-h-[80px] max-h-[120px] resize-none pr-32"
+                  rows={3}
                 />
-                {/* 模型选择器 */}
-                <Select value={selectedModel} onValueChange={setSelectedModel}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="选择模型" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map((model) => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={sendMessage}
-                  disabled={isLoading || !input.trim() || !selectedModel}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
+                <div className="absolute bottom-2 right-2 flex gap-2">
+                  <Select value={selectedModel} onValueChange={setSelectedModel}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue placeholder="选择模型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {models.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          {model.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={sendMessage}
+                    disabled={isLoading || !input.trim() || !selectedModel}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 h-8 px-3"
+                    size="sm"
+                  >
+                    <Send className="w-3 h-3" />
+                  </Button>
+                </div>
               </div>
               {!selectedModel && <p className="text-sm text-red-500 mt-2">请先选择一个模型</p>}
             </div>
