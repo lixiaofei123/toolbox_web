@@ -45,8 +45,8 @@ export async function onRequest({ request}) {
         return Response.redirect(redirectUrl, 301);
     }
 
-  //  const newUrl = new URL(dockerHubUrl + url.pathname);
-    const newReq = new Request("https://www.baidu.com", {
+  //  const newUrl = new URL();
+    const newReq = new Request(dockerHubUrl + url.pathname, {
         method: request.method,
         headers: request.headers,
         redirect: "manual",
