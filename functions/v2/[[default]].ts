@@ -4,7 +4,7 @@
 const dockerHubUrl = "https://registry-1.docker.io";
 
 export async function onRequest({ request}) {
-    
+
     const url = new URL(request.url);
 
     const authorization = request.headers.get("Authorization");
@@ -46,7 +46,7 @@ export async function onRequest({ request}) {
     }
 
     const newUrl = new URL(dockerHubUrl + url.pathname);
-    const newReq = new Request(newUrl, {
+    const newReq = new Request(newUrl.toString(), {
         method: request.method,
         headers: request.headers,
         redirect: "manual",
