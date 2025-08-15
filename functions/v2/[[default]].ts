@@ -4,26 +4,10 @@
 const dockerHubUrl = "https://registry-1.docker.io";
 
 export async function onRequest({ request}) {
+    
     const url = new URL(request.url);
 
     const authorization = request.headers.get("Authorization");
-    if (url.pathname == "/v2/") {
-        const newUrl = new URL(dockerHubUrl + "/v2/");
-        const headers = new Headers();
-        if (authorization) {
-            headers.set("Authorization", authorization);
-        }
-        const resp = await fetch(newUrl.toString(), {
-            method: "GET",
-            headers: headers,
-            redirect: "follow",
-        });
-        if (resp.status === 401) {
-            return responseUnauthorized(url);
-        }
-        return resp;
-    }
-
     if (url.pathname == "/v2/auth") {
         const newUrl = new URL(dockerHubUrl + "/v2/");
         const resp = await fetch(newUrl.toString(), {
@@ -138,7 +122,7 @@ function responseUnauthorized(url) {
     const headers = new Headers();
     headers.set(
         "Www-Authenticate",
-        `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`
+        `Bearer realm="https://${url.hostname}/v2/auth",service="edgeone-page-proxy"`
     );
     return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
         status: 401,
