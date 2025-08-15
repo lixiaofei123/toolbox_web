@@ -46,7 +46,7 @@ export async function onRequest({ request}) {
     // }
 
   //  const newUrl = new URL();
-    const newReq = new Request(dockerHubUrl + url.pathname, {
+    const newReq = new Request("https://tool.lixf.ink", {
         method: request.method,
         headers: request.headers,
         redirect: "manual",
