@@ -21,7 +21,7 @@ export async function onRequest({ request }) {
     if (body.stream === true) {
         const upstreamResponse = await fetch('https://cnb.cool/ai/chat/completions', {
             method: 'POST',
-            body: body,
+            body: JSON.stringify(body),
             redirect: 'follow',
             headers: {
                 'Content-Type': 'application/json',
