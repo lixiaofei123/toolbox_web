@@ -1,4 +1,3 @@
-
 const prefix = "/cdn/";
 
 export async function onRequest({ request }) {

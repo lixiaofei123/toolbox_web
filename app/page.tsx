@@ -25,6 +25,7 @@ import {
   Network,
   Package,
   Bot,
+  Zap,
 } from "lucide-react"
 
 export default function Home() {
@@ -197,6 +198,13 @@ export default function Home() {
       href: "/ai-chat",
       icon: <Bot className="w-4 h-4" />,
       color: "bg-purple-100 text-purple-600",
+    },
+    {
+      name: "静态资源加速",
+      description: "CDN 加速服务，支持 jsdelivr 和 cnb 平台资源代理",
+      href: "/cdn-accelerator",
+      icon: <Zap className="w-4 h-4" />,
+      color: "bg-yellow-100 text-yellow-600",
     },
   ]
 

@@ -394,7 +394,7 @@ export default function ImageEditor() {
   // 修复后的尺寸调整功能
   const resizeImage = () => {
     if (!originalImage || !canvasRef.current || !customWidth || !customHeight) {
-      setError("请输入有效的宽度和高度")
+      setError("请输入��效的宽度和高度")
       return
     }
 
