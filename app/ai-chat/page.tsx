@@ -42,6 +42,8 @@ export default function AIChatPage() {
   const [copied, setCopied] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  // 用于每条消息的思考折叠状态
+  const [collapsedThink, setCollapsedThink] = useState<{ [msgId: string]: { [segIdx: number]: boolean } }>({})
 
   // 初始化basePath和获取模型列表
   useEffect(() => {
@@ -311,6 +313,45 @@ curl -X POST "${basePath}/v1/chat/completions" \\
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // 新增：分段解析消息内容，支持流式渲染
+  const splitMessageByTag = (content: string) => {
+    // 支持 <think>、<Thinking>、<answer>、<Answer>，不区分大小写
+    const tagRegex = /<(think|answer|Thinking|Answer)>|<\/(think|answer|Thinking|Answer)>/gi
+    let result: { type: "think" | "answer"; text: string }[] = []
+    let lastIndex = 0
+    let currentType: "think" | "answer" | null = null
+    let match: RegExpExecArray | null
+
+    while ((match = tagRegex.exec(content)) !== null) {
+      const tag = match[1] || match[2]
+      const tagStart = match.index
+      // 取标签前的内容
+      if (tagStart > lastIndex) {
+        const text = content.slice(lastIndex, tagStart)
+        if (currentType && text.trim() !== "") {
+          result.push({ type: currentType, text })
+        }
+      }
+      // 处理标签
+      if (match[0][1] === "/") {
+        // 闭合标签，结束当前类型
+        currentType = null
+      } else {
+        // 起始标签，切换类型
+        currentType = tag.toLowerCase().startsWith("think") ? "think" : "answer"
+      }
+      lastIndex = tagRegex.lastIndex
+    }
+    // 剩余内容
+    if (lastIndex < content.length) {
+      const text = content.slice(lastIndex)
+      if (currentType && text.trim() !== "") {
+        result.push({ type: currentType, text })
+      }
+    }
+    return result
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       {/* 导航栏 */}
@@ -409,7 +450,7 @@ curl -X POST "${basePath}/v1/chat/completions" \\
         <Card className="shadow-lg border-0">
           <CardContent className="p-0">
             {/* 聊天消息区域 */}
-            <div className="h-[600px] overflow-y-auto p-6 space-y-4">
+            <div className="h-[600px] overflow-y-auto p-6 space-y-4 custom-scrollbar">
               {messages.length === 0 && (
                 <div className="text-center text-gray-500 mt-20">
                   <Bot className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -418,8 +459,8 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                 </div>
               )}
 
-              {messages.map((message, index) => (
-                <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              {messages.map((message, messageIdx) => (
+                <div key={messageIdx} className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                   {message.role === "assistant" && (
                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                       <Bot className="w-4 h-4 text-white" />
@@ -436,145 +477,138 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                     {message.role === "assistant" && (
                       <div>
                         {(() => {
-                          const { thinkContent, answerContent } = parseMessageContent(message.content)
-                          const isIncomplete = isStreamingIncomplete(message.content)
-
+                          // 新渲染逻辑：分段渲染思考和回答
+                          const segments = splitMessageByTag(message.content)
+                          if (segments.length === 0) {
+                            return (
+                              <div className="prose prose-sm max-w-none text-gray-800">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    code({ node, inline, className, children, ...props }) {
+                                      const match = /language-(\w+)/.exec(className || "")
+                                      return !inline && match ? (
+                                        <SyntaxHighlighter
+                                          style={tomorrow}
+                                          language={match[1]}
+                                          PreTag="div"
+                                          className="rounded-md"
+                                          {...props}
+                                        >
+                                          {String(children).replace(/\n$/, "")}
+                                        </SyntaxHighlighter>
+                                      ) : (
+                                        <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
+                                          {children}
+                                        </code>
+                                      )
+                                    },
+                                    table({ children }) {
+                                      return (
+                                        <div className="overflow-x-auto">
+                                          <table className="min-w-full border-collapse border border-gray-300">{children}</table>
+                                        </div>
+                                      )
+                                    },
+                                    th({ children }) {
+                                      return (
+                                        <th className="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold">{children}</th>
+                                      )
+                                    },
+                                    td({ children }) {
+                                      return <td className="border border-gray-300 px-4 py-2">{children}</td>
+                                    },
+                                  }}
+                                >
+                                  {message.content}
+                                </ReactMarkdown>
+                              </div>
+                            )
+                          }
                           return (
                             <>
-                              {/* 思考过程部分 */}
-                              {thinkContent && (
-                                <div className="mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div
-                                      className={`w-3 h-3 bg-amber-500 rounded-full ${isIncomplete ? "animate-pulse" : ""}`}
-                                    ></div>
-                                    <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
-                                      思考过程
-                                    </span>
-                                    {isIncomplete && (
-                                      <span className="text-xs text-amber-600 animate-pulse">正在思考...</span>
-                                    )}
-                                  </div>
-                                  <div className="text-sm text-amber-700 whitespace-pre-wrap font-mono leading-relaxed">
-                                    {thinkContent}
-                                  </div>
-                                </div>
-                              )}
-
-                              {answerContent && (
-                                <div className={thinkContent ? "mt-3" : ""}>
-                                  {thinkContent && (
+                              {segments.map((seg, idx) =>
+                                seg.type === "think" ? (
+                                  (() => {
+                                    // 判断是否为最后一个think段，且后面有answer段，才自动折叠
+                                    const isLastThink = segments.slice(idx + 1).find(s => s.type === "think") === undefined && segments.slice(idx + 1).find(s => s.type === "answer") !== undefined
+                                    // 用消息索引+段索引做key
+                                    const msgKey = String(messageIdx)
+                                    const collapsed = collapsedThink[msgKey]?.[idx] ?? (isLastThink ? true : false)
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg"
+                                      >
+                                        <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setCollapsedThink(prev => ({
+                                          ...prev,
+                                          [msgKey]: {
+                                            ...prev[msgKey],
+                                            [idx]: !collapsed
+                                          }
+                                        }))}>
+                                          <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse"></div>
+                                          <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">思考过程</span>
+                                          <span className="text-xs text-amber-600 underline ml-2 align-middle">{collapsed ? "点击展开" : "点击收起"}</span>
+                                        </div>
+                                        {!collapsed && (
+                                          <div className="text-sm text-amber-700 whitespace-pre-wrap font-mono leading-relaxed">
+                                            {seg.text}
+                                          </div>
+                                        )}
+                                      </div>
+                                    )
+                                  })()
+                                ) : (
+                                  <div key={idx} className="mt-3">
                                     <div className="flex items-center gap-2 mb-2">
                                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                      <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">
-                                        回答
-                                      </span>
+                                      <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">回答</span>
                                     </div>
-                                  )}
-                                  <div className="prose prose-sm max-w-none text-gray-800">
-                                    <ReactMarkdown
-                                      remarkPlugins={[remarkGfm]}
-                                      components={{
-                                        code({ node, inline, className, children, ...props }) {
-                                          const match = /language-(\w+)/.exec(className || "")
-                                          return !inline && match ? (
-                                            <SyntaxHighlighter
-                                              style={tomorrow}
-                                              language={match[1]}
-                                              PreTag="div"
-                                              className="rounded-md"
-                                              {...props}
-                                            >
-                                              {String(children).replace(/\n$/, "")}
-                                            </SyntaxHighlighter>
-                                          ) : (
-                                            <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
-                                              {children}
-                                            </code>
-                                          )
-                                        },
-                                        table({ children }) {
-                                          return (
-                                            <div className="overflow-x-auto">
-                                              <table className="min-w-full border-collapse border border-gray-300">
+                                    <div className="prose prose-sm max-w-none text-gray-800">
+                                      <ReactMarkdown
+                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                          code({ node, inline, className, children, ...props }) {
+                                            const match = /language-(\w+)/.exec(className || "")
+                                            return !inline && match ? (
+                                              <SyntaxHighlighter
+                                                style={tomorrow}
+                                                language={match[1]}
+                                                PreTag="div"
+                                                className="rounded-md"
+                                                {...props}
+                                              >
+                                                {String(children).replace(/\n$/, "")}
+                                              </SyntaxHighlighter>
+                                            ) : (
+                                              <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
                                                 {children}
-                                              </table>
-                                            </div>
-                                          )
-                                        },
-                                        th({ children }) {
-                                          return (
-                                            <th className="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold">
-                                              {children}
-                                            </th>
-                                          )
-                                        },
-                                        td({ children }) {
-                                          return <td className="border border-gray-300 px-4 py-2">{children}</td>
-                                        },
-                                      }}
-                                    >
-                                      {answerContent}
-                                    </ReactMarkdown>
+                                              </code>
+                                            )
+                                          },
+                                          table({ children }) {
+                                            return (
+                                              <div className="overflow-x-auto">
+                                                <table className="min-w-full border-collapse border border-gray-300">{children}</table>
+                                              </div>
+                                            )
+                                          },
+                                          th({ children }) {
+                                            return (
+                                              <th className="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold">{children}</th>
+                                            )
+                                          },
+                                          td({ children }) {
+                                            return <td className="border border-gray-300 px-4 py-2">{children}</td>
+                                          },
+                                        }}
+                                      >
+                                        {seg.text}
+                                      </ReactMarkdown>
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-
-                              {!thinkContent && !answerContent && (
-                                <div className="prose prose-sm max-w-none text-gray-800">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      code({ node, inline, className, children, ...props }) {
-                                        const match = /language-(\w+)/.exec(className || "")
-                                        return !inline && match ? (
-                                          <SyntaxHighlighter
-                                            style={tomorrow}
-                                            language={match[1]}
-                                            PreTag="div"
-                                            className="rounded-md"
-                                            {...props}
-                                          >
-                                            {String(children).replace(/\n$/, "")}
-                                          </SyntaxHighlighter>
-                                        ) : (
-                                          <code className="bg-gray-100 px-1 py-0.5 rounded text-sm" {...props}>
-                                            {children}
-                                          </code>
-                                        )
-                                      },
-                                      table({ children }) {
-                                        return (
-                                          <div className="overflow-x-auto">
-                                            <table className="min-w-full border-collapse border border-gray-300">
-                                              {children}
-                                            </table>
-                                          </div>
-                                        )
-                                      },
-                                      th({ children }) {
-                                        return (
-                                          <th className="border border-gray-300 bg-gray-50 px-4 py-2 text-left font-semibold">
-                                            {children}
-                                          </th>
-                                        )
-                                      },
-                                      td({ children }) {
-                                        return <td className="border border-gray-300 px-4 py-2">{children}</td>
-                                      },
-                                    }}
-                                  >
-                                    {message.content}
-                                  </ReactMarkdown>
-                                </div>
-                              )}
-
-                              {/* 显示正在接收回答的状态 */}
-                              {isIncomplete && answerContent && (
-                                <div className="mt-2 flex items-center gap-2">
-                                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                                  <span className="text-xs text-gray-500 animate-pulse">正在接收回答...</span>
-                                </div>
+                                )
                               )}
                             </>
                           )
@@ -683,6 +717,24 @@ curl -X POST "${basePath}/v1/chat/completions" \\
           </CardContent>
         </Card>
       </div>
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #c7d2fe;
+          border-radius: 4px;
+          transition: background 0.2s;
+        }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+          background: #818cf8;
+        }
+        .custom-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: #c7d2fe #f1f5f9;
+        }
+      `}</style>
     </div>
   )
 }
