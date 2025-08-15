@@ -52,16 +52,16 @@ export async function onRequest({ request}) {
         redirect: "manual",
     });
 
-    if(url.pathname.indexOf("/blobs/") !== -1){
-        // 对于blob，优先从Cache中获取
-        const cache = caches.default;
-        try{
-            let response = await cache.match(newReq);
-            return response
-        }catch (e) {
-            await cache.delete(request);
-        }
-    }
+    // if(url.pathname.indexOf("/blobs/") !== -1){
+    //     // 对于blob，优先从Cache中获取
+    //     const cache = caches.default;
+    //     try{
+    //         let response = await cache.match(newReq);
+    //         return response
+    //     }catch (e) {
+    //         await cache.delete(request);
+    //     }
+    // }
 
     let resp = await fetch(newReq);
     if (resp.status == 401) {
@@ -77,12 +77,12 @@ export async function onRequest({ request}) {
         resp = redirectResp;
     }
 
-    if(url.pathname.indexOf("/blobs/") !== -1){
-        const cache = caches.default;
-        resp.headers.append('x-edgefunctions-cache', 'hit');
-        cache.put(request, resp.clone());
-        resp.headers.set('x-edgefunctions-cache', 'miss');
-    }
+    // if(url.pathname.indexOf("/blobs/") !== -1){
+    //     const cache = caches.default;
+    //     resp.headers.append('x-edgefunctions-cache', 'hit');
+    //     cache.put(request, resp.clone());
+    //     resp.headers.set('x-edgefunctions-cache', 'miss');
+    // }
 
     return resp
 
