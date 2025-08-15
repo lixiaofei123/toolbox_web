@@ -45,8 +45,8 @@ export async function onRequest({ request}) {
         return Response.redirect(redirectUrl, 301);
     }
 
-    const newUrl = new URL(dockerHubUrl + url.pathname);
-    const newReq = new Request(newUrl.toString(), {
+  //  const newUrl = new URL(dockerHubUrl + url.pathname);
+    const newReq = new Request("https://www.baidu.com", {
         method: request.method,
         headers: request.headers,
         redirect: "manual",
@@ -68,14 +68,14 @@ export async function onRequest({ request}) {
         return responseUnauthorized(url);
     }
 
-    if (resp.status == 307) {
-        const location = new URL(resp.headers.get("Location"));
-        const redirectResp = await fetch(location.toString(), {
-            method: "GET",
-            redirect: "follow",
-        });
-        resp = redirectResp;
-    }
+    // if (resp.status == 307) {
+    //     const location = new URL(resp.headers.get("Location"));
+    //     const redirectResp = await fetch(location.toString(), {
+    //         method: "GET",
+    //         redirect: "follow",
+    //     });
+    //     resp = redirectResp;
+    // }
 
     // if(url.pathname.indexOf("/blobs/") !== -1){
     //     const cache = caches.default;

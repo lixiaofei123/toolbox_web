@@ -3,24 +3,24 @@
 
 const dockerHubUrl = "https://registry-1.docker.io";
 
-export async function onRequest({ request}) {
+export async function onRequest({ request }) {
     const url = new URL(request.url);
 
     const authorization = request.headers.get("Authorization");
     const newUrl = new URL(dockerHubUrl + "/v2/");
-        const headers = new Headers();
-        if (authorization) {
-            headers.set("Authorization", authorization);
-        }
-        const resp = await fetch(newUrl.toString(), {
-            method: "GET",
-            headers: headers,
-            redirect: "follow",
-        });
-        if (resp.status === 401) {
-            return responseUnauthorized(url);
-        }
-        return resp;
+    const headers = new Headers();
+    if (authorization) {
+        headers.set("Authorization", authorization);
+    }
+    const resp = await fetch(newUrl.toString(), {
+        method: "GET",
+        headers: headers,
+        redirect: "follow",
+    });
+    if (resp.status === 401) {
+        return responseUnauthorized(url);
+    }
+    return resp;
 
 }
 
