@@ -36,7 +36,7 @@ export async function onRequest({ request }) {
         }
     }
 
-    return new Response()
+    return new Response("", { status: 404})
 
 }
 
