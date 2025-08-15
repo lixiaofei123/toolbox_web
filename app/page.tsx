@@ -202,7 +202,7 @@ export default function Home() {
     {
       name: "静态资源加速",
       description: "CDN 加速服务，支持 jsdelivr 和 cnb 平台资源代理",
-      href: "/cdn-accelerator",
+      href: "/accelerator",
       icon: <Zap className="w-4 h-4" />,
       color: "bg-yellow-100 text-yellow-600",
     },
