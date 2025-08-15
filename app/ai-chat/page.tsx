@@ -399,7 +399,7 @@ curl -X POST "${basePath}/v1/chat/completions" \\
             <CardContent>
               <Alert className="mb-4">
                 <Info className="w-4 h-4" />
-                <AlertDescription>注意：此功能需要部署到 EdgeOne Pages 上才能正常访问 API 接口。</AlertDescription>
+                <AlertDescription>注意：如果你是自己部署的工具箱网站的话，需要部署到EdgeOne Pages上才能正常访问API接口。</AlertDescription>
               </Alert>
               <div className="space-y-3">
                 <div>
