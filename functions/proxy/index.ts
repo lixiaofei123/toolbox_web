@@ -1,5 +1,5 @@
-const go_proxy_upstream = "https://proxy.golang.org"
-const prefix = "/goproxy/";
+
+const prefix = "/proxy/";
 
 export async function onRequest({ request }) {
 
@@ -7,15 +7,20 @@ export async function onRequest({ request }) {
     const { pathname } = new URL(srcurl);
     const subpath = pathname.slice(prefix.length)
 
-    if (subpath.startsWith("sumdb")) {
-        const sumdbPath = subpath.replace("sumdb/", "");
-        if(sumdbPath.endsWith("/supported")){
-            return new Response("ok")
-        }
-        const response = await fetch(`https://${sumdbPath}`);
-        return response
-    } else {
-        const proxy_url = `${go_proxy_upstream}/${subpath}`
+    let proxy_url = ""
+    if (subpath.startsWith("gh/") || subpath.startsWith("npm/") || subpath.startsWith("wp/")) {
+        proxy_url = `https://cdn.jsdelivr.net/${subpath}`
+    }
+
+    if (subpath.startsWith("cnb/")) {
+        proxy_url = convertCnbPath(subpath)
+    }
+
+    if (subpath.startsWith("http://") || subpath.startsWith("https://")) {
+        proxy_url = subpath
+    }
+
+    if (proxy_url !== "") {
         const data_request = new Request(proxy_url)
         const cache = caches.default;
         try {
@@ -30,8 +35,10 @@ export async function onRequest({ request }) {
             return fetchData(data_request);
         }
     }
-}
 
+    return new Response()
+
+}
 
 async function fetchData(request) {
     const cache = caches.default;
@@ -40,4 +47,20 @@ async function fetchData(request) {
     cache.put(request, response.clone());
     response.headers.append('x-edgefunctions-cache', 'miss');
     return response;
+}
+
+
+function convertCnbPath(subpath: string) {
+    const rest = subpath.slice(4);
+    const parts = rest.split("/");
+    if (parts.length < 2) {
+        return "";
+    }
+    const username = parts[0];
+    const [pkg, version] = parts[1].split("@");
+    const filePath = parts.slice(2).join("/");
+    if (!pkg || !version || !filePath) {
+        return "";
+    }
+    return `https://cnb.cool/${username}/${pkg}/-/git/raw/${version}/${filePath}`;
 }
