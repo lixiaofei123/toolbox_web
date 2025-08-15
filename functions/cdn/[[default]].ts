@@ -41,6 +41,7 @@ export async function onRequest({ request }) {
 }
 
 async function fetchData(request) {
+
     const cache = caches.default;
     let response = await fetch(request);
     response.headers.append('Cache-Control', 's-maxage=60');
@@ -49,6 +50,7 @@ async function fetchData(request) {
     cache.put(request, response.clone());
     response.headers.append('x-edgefunctions-cache', 'miss');
     return response;
+    
 }
 
 
