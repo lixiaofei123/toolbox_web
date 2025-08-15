@@ -4,10 +4,26 @@
 const dockerHubUrl = "https://registry-1.docker.io";
 
 export async function onRequest({ request}) {
-
     const url = new URL(request.url);
 
     const authorization = request.headers.get("Authorization");
+    if (url.pathname == "/v2/") {
+        const newUrl = new URL(dockerHubUrl + "/v2/");
+        const headers = new Headers();
+        if (authorization) {
+            headers.set("Authorization", authorization);
+        }
+        const resp = await fetch(newUrl.toString(), {
+            method: "GET",
+            headers: headers,
+            redirect: "follow",
+        });
+        if (resp.status === 401) {
+            return responseUnauthorized(url);
+        }
+        return resp;
+    }
+
     if (url.pathname == "/v2/auth") {
         const newUrl = new URL(dockerHubUrl + "/v2/");
         const resp = await fetch(newUrl.toString(), {
@@ -37,52 +53,52 @@ export async function onRequest({ request}) {
 
     // redirect for DockerHub library images
     // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
-    // const pathParts = url.pathname.split("/");
-    // if (pathParts.length == 5) {
-    //     pathParts.splice(2, 0, "library");
-    //     const redirectUrl = new URL(url);
-    //     redirectUrl.pathname = pathParts.join("/");
-    //     return Response.redirect(redirectUrl, 301);
-    // }
+    const pathParts = url.pathname.split("/");
+    if (pathParts.length == 5) {
+        pathParts.splice(2, 0, "library");
+        const redirectUrl = new URL(url);
+        redirectUrl.pathname = pathParts.join("/");
+        return Response.redirect(redirectUrl, 301);
+    }
 
-  //  const newUrl = new URL();
-    const newReq = new Request("https://tool.lixf.ink", {
+    const newUrl = new URL(dockerHubUrl + url.pathname);
+    const newReq = new Request(newUrl, {
         method: request.method,
         headers: request.headers,
         redirect: "manual",
     });
 
-    // if(url.pathname.indexOf("/blobs/") !== -1){
-    //     // 对于blob，优先从Cache中获取
-    //     const cache = caches.default;
-    //     try{
-    //         let response = await cache.match(newReq);
-    //         return response
-    //     }catch (e) {
-    //         await cache.delete(request);
-    //     }
-    // }
+    if(url.pathname.indexOf("/blobs/") !== -1){
+        // 对于blob，优先从Cache中获取
+        const cache = caches.default;
+        try{
+            let response = await cache.match(newReq);
+            return response
+        }catch (e) {
+            await cache.delete(request);
+        }
+    }
 
     let resp = await fetch(newReq);
-    // if (resp.status == 401) {
-    //     return responseUnauthorized(url);
-    // }
+    if (resp.status == 401) {
+        return responseUnauthorized(url);
+    }
 
-    // if (resp.status == 307) {
-    //     const location = new URL(resp.headers.get("Location"));
-    //     const redirectResp = await fetch(location.toString(), {
-    //         method: "GET",
-    //         redirect: "follow",
-    //     });
-    //     resp = redirectResp;
-    // }
+    if (resp.status == 307) {
+        const location = new URL(resp.headers.get("Location"));
+        const redirectResp = await fetch(location.toString(), {
+            method: "GET",
+            redirect: "follow",
+        });
+        return redirectResp;
+    }
 
-    // if(url.pathname.indexOf("/blobs/") !== -1){
-    //     const cache = caches.default;
-    //     resp.headers.append('x-edgefunctions-cache', 'hit');
-    //     cache.put(request, resp.clone());
-    //     resp.headers.set('x-edgefunctions-cache', 'miss');
-    // }
+    if(url.pathname.indexOf("/blobs/") !== -1){
+        const cache = caches.default;
+        resp.headers.append('x-edgefunctions-cache', 'hit');
+        cache.put(request, resp.clone());
+        resp.headers.set('x-edgefunctions-cache', 'miss');
+    }
 
     return resp
 
@@ -122,7 +138,7 @@ function responseUnauthorized(url) {
     const headers = new Headers();
     headers.set(
         "Www-Authenticate",
-        `Bearer realm="https://${url.hostname}/v2/auth",service="edgeone-page-proxy"`
+        `Bearer realm="https://${url.hostname}/v2/auth",service="cloudflare-docker-proxy"`
     );
     return new Response(JSON.stringify({ message: "UNAUTHORIZED" }), {
         status: 401,
