@@ -1,7 +1,7 @@
 // 代码参考自 https://github.com/ciiiii/cloudflare-docker-proxy/blob/master/src/index.js
 
 
-const dockerHubUrl = "https://registry-1.docker.io";
+const dockerHubUrl = "https://registry.k8s.io";
 
 export async function onRequest({ request}) {
     const url = new URL(request.url);
