@@ -71,16 +71,15 @@ export default function CdnAccelerator() {
       title: "jQuery 示例",
       original: "https://cdn.jsdelivr.net/gh/jquery/jquery@3.6.4/dist/jquery.min.js",
       accelerated: `${currentDomain}/cdn/gh/jquery/jquery@3.6.4/dist/jquery.min.js`,
-    },
-    {
-      title: "Bootstrap CSS 示例",
-      original: "https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css",
-      accelerated: `${currentDomain}/cdn/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css`,
-    },
+    }
   ]
 
   const cnbExamples = [
-    
+    {
+      title: "CNB 平台资源示例",
+      original: "https://cnb.cool/xiaofei/jquery/-/blob/3.6.4/dist/jquery.min.js",
+      accelerated: `${currentDomain}/cdn/cnb/xiaofei/jquery@3.6.4/dist/jquery.min.js`,
+    }
   ]
 
   return (
@@ -248,7 +247,7 @@ export default function CdnAccelerator() {
                       </Button>
                     </div>
                     <p className="text-xs text-gray-500">
-                      请输入CNB公开仓库上的文件原始链接,Blob链接和raw链接皆可
+                      请输入CNB上公开仓库的文件原始链接,raw和blob链接皆可
                     </p>
                   </div>
 
