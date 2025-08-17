@@ -57,6 +57,7 @@ export default function CdnAccelerator() {
   const convertGithubUrl = (url: string) => {
     const githubBlobRegex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/
     const githubRawRegex = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/refs\/heads\/([^/]+)\/(.+)$/
+    const githubRawRefsRegex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/raw\/refs\/heads\/([^/]+)\/(.+)$/
 
     let match = url.match(githubBlobRegex)
     if (match) {
@@ -65,6 +66,12 @@ export default function CdnAccelerator() {
     }
 
     match = url.match(githubRawRegex)
+    if (match) {
+      const [, username, project, branch, filePath] = match
+      return `${currentDomain}/cdn/gh/${username}/${project}@${branch}/${filePath}`
+    }
+
+    match = url.match(githubRawRefsRegex)
     if (match) {
       const [, username, project, branch, filePath] = match
       return `${currentDomain}/cdn/gh/${username}/${project}@${branch}/${filePath}`
