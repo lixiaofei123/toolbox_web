@@ -85,7 +85,7 @@ export async function onRequest({ request}) {
     }
 
     if(resp.status == 503){
-        return new Response(newReq.toString(), {
+        return new Response(newUrl.toString(), {
             status: 200,
             headers: resp.headers,
         })
