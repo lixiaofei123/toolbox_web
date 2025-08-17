@@ -85,7 +85,8 @@ export async function onRequest({ request}) {
     }
 
     if(resp.status == 503){
-        return new Response(newUrl.toString(), {
+        const text = await resp.text()
+        return new Response(text, {
             status: 200,
             headers: resp.headers,
         })
