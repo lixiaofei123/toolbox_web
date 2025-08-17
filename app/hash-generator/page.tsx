@@ -107,7 +107,7 @@ export default function HashGenerator() {
       setIsProcessing(true)
       setProgress(0)
 
-      // 使用 setTimeout 来模拟异步处理，让进度条有时间显示
+      // 使用 setTimeout 来模拟异步处理，让进���条有时间显示
       setTimeout(() => {
         try {
           const wordArray = CryptoJS.lib.WordArray.create(fileData)

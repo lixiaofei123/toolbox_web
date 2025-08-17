@@ -23,7 +23,7 @@ if ! docker info > /dev/null 2>&1; then
     exit 1
 fi
 
-# 清理旧的构建缓存
+# 清理旧的构���缓存
 echo -e "${YELLOW}🧹 清理构建缓存...${NC}"
 docker builder prune -f
 

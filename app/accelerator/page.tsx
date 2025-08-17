@@ -15,6 +15,8 @@ export default function CdnAccelerator() {
   const [customUrl, setCustomUrl] = useState("")
   const [cnbUrl, setCnbUrl] = useState("")
   const [convertedCnbUrl, setConvertedCnbUrl] = useState("")
+  const [githubUrl, setGithubUrl] = useState("")
+  const [convertedGithubUrl, setConvertedGithubUrl] = useState("")
   const { toast } = useToast()
 
   useEffect(() => {
@@ -52,6 +54,25 @@ export default function CdnAccelerator() {
     return ""
   }
 
+  const convertGithubUrl = (url: string) => {
+    const githubBlobRegex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/
+    const githubRawRegex = /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/refs\/heads\/([^/]+)\/(.+)$/
+
+    let match = url.match(githubBlobRegex)
+    if (match) {
+      const [, username, project, branch, filePath] = match
+      return `${currentDomain}/cdn/gh/${username}/${project}@${branch}/${filePath}`
+    }
+
+    match = url.match(githubRawRegex)
+    if (match) {
+      const [, username, project, branch, filePath] = match
+      return `${currentDomain}/cdn/gh/${username}/${project}@${branch}/${filePath}`
+    }
+
+    return ""
+  }
+
   const handleCnbConvert = () => {
     const converted = convertCnbUrl(cnbUrl)
     if (converted) {
@@ -66,12 +87,26 @@ export default function CdnAccelerator() {
     }
   }
 
+  const handleGithubConvert = () => {
+    const converted = convertGithubUrl(githubUrl)
+    if (converted) {
+      setConvertedGithubUrl(converted)
+      copyToClipboard(converted)
+    } else {
+      toast({
+        title: "转换失败",
+        description: "请输入正确的GitHub链接格式",
+        variant: "destructive",
+      })
+    }
+  }
+
   const examples = [
     {
       title: "jQuery 示例",
       original: "https://cdn.jsdelivr.net/gh/jquery/jquery@3.6.4/dist/jquery.min.js",
       accelerated: `${currentDomain}/cdn/gh/jquery/jquery@3.6.4/dist/jquery.min.js`,
-    }
+    },
   ]
 
   const cnbExamples = [
@@ -79,7 +114,15 @@ export default function CdnAccelerator() {
       title: "CNB 平台资源示例",
       original: "https://cnb.cool/xiaofei/jquery/-/blob/3.6.4/dist/jquery.min.js",
       accelerated: `${currentDomain}/cdn/cnb/xiaofei/jquery@3.6.4/dist/jquery.min.js`,
-    }
+    },
+  ]
+
+  const githubExamples = [
+    {
+      title: "GitHub 平台资源示例",
+      original: "https://github.com/caddyserver/caddy/blob/master/cmd/cobra.go",
+      accelerated: `${currentDomain}/cdn/gh/caddyserver/caddy@master/cmd/cobra.go`,
+    },
   ]
 
   return (
@@ -167,8 +210,9 @@ export default function CdnAccelerator() {
           </div>
 
           <Tabs defaultValue="jsdelivr" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="jsdelivr">jsdelivr 加速</TabsTrigger>
+              <TabsTrigger value="github">GitHub 平台代理</TabsTrigger>
               <TabsTrigger value="cnb">CNB 平台代理</TabsTrigger>
               <TabsTrigger value="custom">自定义代理</TabsTrigger>
             </TabsList>
@@ -191,6 +235,79 @@ export default function CdnAccelerator() {
                   </div>
 
                   {examples.map((example, index) => (
+                    <div key={index} className="space-y-2">
+                      <Label>{example.title}</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-gray-500 w-16">原始：</Label>
+                          <Input value={example.original} readOnly className="font-mono text-xs" />
+                          <Button onClick={() => copyToClipboard(example.original)} size="sm" variant="outline">
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs text-green-600 w-16">加速：</Label>
+                          <Input value={example.accelerated} readOnly className="font-mono text-xs" />
+                          <Button onClick={() => copyToClipboard(example.accelerated)} size="sm" variant="outline">
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="github" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>GitHub 平台资源代理</CardTitle>
+                  <CardDescription>
+                    代理 GitHub 平台的资源，实现类似于 https://cdn.jsdelivr.net/gh 的效果
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>使用方法</Label>
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-2">使用格式：</p>
+                      <code className="text-sm bg-white px-2 py-1 rounded">
+                        {currentDomain}/cdn/gh/用户名/仓库名@分支名/文件路径
+                      </code>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="github-url">GitHub 链接转换</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="github-url"
+                        placeholder="https://github.com/caddyserver/caddy/blob/master/cmd/cobra.go"
+                        value={githubUrl}
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                        className="font-mono"
+                      />
+                      <Button onClick={handleGithubConvert} disabled={!githubUrl}>
+                        转换并复制
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500">请输入Github上公开仓库的文件原始链接,raw和blob链接皆可</p>
+                  </div>
+
+                  {convertedGithubUrl && (
+                    <div className="space-y-2">
+                      <Label>转换结果</Label>
+                      <div className="flex items-center gap-2">
+                        <Input value={convertedGithubUrl} readOnly className="font-mono text-sm" />
+                        <Button onClick={() => copyToClipboard(convertedGithubUrl)} size="sm" variant="outline">
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {githubExamples.map((example, index) => (
                     <div key={index} className="space-y-2">
                       <Label>{example.title}</Label>
                       <div className="space-y-2">
@@ -246,9 +363,7 @@ export default function CdnAccelerator() {
                         转换并复制
                       </Button>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      请输入CNB上公开仓库的文件原始链接,raw和blob链接皆可
-                    </p>
+                    <p className="text-xs text-gray-500">请输入CNB上公开仓库的文件原始链接,raw和blob链接皆可</p>
                   </div>
 
                   {convertedCnbUrl && (
@@ -360,6 +475,9 @@ export default function CdnAccelerator() {
               <CardContent className="space-y-2 text-sm text-gray-600">
                 <p>
                   • <strong>jsdelivr 加速：</strong>适用于加速 npm 包和 GitHub 仓库资源
+                </p>
+                <p>
+                  • <strong>GitHub 平台代理：</strong>专门用于代理 GitHub 平台的代码仓库资源
                 </p>
                 <p>
                   • <strong>CNB 平台代理：</strong>专门用于代理腾讯 CNB 平台的代码仓库资源

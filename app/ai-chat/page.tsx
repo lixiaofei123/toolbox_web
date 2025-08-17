@@ -477,7 +477,7 @@ curl -X POST "${basePath}/v1/chat/completions" \\
                     {message.role === "assistant" && (
                       <div>
                         {(() => {
-                          // 新渲染逻辑：分段渲染思考和回答
+                          // 新渲染���辑：分段渲染思考和回答
                           const segments = splitMessageByTag(message.content)
                           if (segments.length === 0) {
                             return (
