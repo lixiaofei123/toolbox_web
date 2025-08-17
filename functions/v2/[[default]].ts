@@ -53,19 +53,19 @@ export async function onRequest({ request}) {
 
     // redirect for DockerHub library images
     // Example: /v2/busybox/manifests/latest => /v2/library/busybox/manifests/latest
-    const pathParts = url.pathname.split("/");
-    if (pathParts.length == 5) {
-        pathParts.splice(2, 0, "library");
-        const redirectUrl = new URL(url);
-        redirectUrl.pathname = pathParts.join("/");
-        return Response.redirect(redirectUrl, 301);
-    }
+    // const pathParts = url.pathname.split("/");
+    // if (pathParts.length == 5) {
+    //     pathParts.splice(2, 0, "library");
+    //     const redirectUrl = new URL(url);
+    //     redirectUrl.pathname = pathParts.join("/");
+    //     return Response.redirect(redirectUrl, 301);
+    // }
 
     const newUrl = new URL(dockerHubUrl + url.pathname);
     const newReq = new Request(newUrl, {
         method: request.method,
         headers: request.headers,
-        redirect: "manual",
+        redirect: "follow",
     });
 
     if(url.pathname.indexOf("/blobs/") !== -1){
@@ -92,14 +92,14 @@ export async function onRequest({ request}) {
         })
     }
 
-    if (resp.status == 307) {
-        const location = new URL(resp.headers.get("Location"));
-        const redirectResp = await fetch(location.toString(), {
-            method: "GET",
-            redirect: "follow",
-        });
-        return redirectResp;
-    }
+    // if (resp.status == 307) {
+    //     const location = new URL(resp.headers.get("Location"));
+    //     const redirectResp = await fetch(location.toString(), {
+    //         method: "GET",
+    //         redirect: "follow",
+    //     });
+    //     return redirectResp;
+    // }
 
     if(url.pathname.indexOf("/blobs/") !== -1){
         const cache = caches.default;
