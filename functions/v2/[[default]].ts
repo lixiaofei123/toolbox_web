@@ -84,6 +84,13 @@ export async function onRequest({ request}) {
         return responseUnauthorized(url);
     }
 
+    if(resp.status == 503){
+        return new Response("503", {
+            status: 200,
+            headers: resp.headers,
+        })
+    }
+
     if (resp.status == 307) {
         const location = new URL(resp.headers.get("Location"));
         const redirectResp = await fetch(location.toString(), {
