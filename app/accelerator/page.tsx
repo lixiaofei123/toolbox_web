@@ -17,6 +17,8 @@ export default function CdnAccelerator() {
   const [convertedCnbUrl, setConvertedCnbUrl] = useState("")
   const [githubUrl, setGithubUrl] = useState("")
   const [convertedGithubUrl, setConvertedGithubUrl] = useState("")
+  const [jsdelivrUrl, setJsdelivrUrl] = useState("")
+  const [convertedJsdelivrUrl, setConvertedJsdelivrUrl] = useState("")
   const { toast } = useToast()
 
   useEffect(() => {
@@ -80,6 +82,18 @@ export default function CdnAccelerator() {
     return ""
   }
 
+  const convertJsdelivrUrl = (url: string) => {
+    const jsdelivrRegex = /^https:\/\/cdn\.jsdelivr\.net\/(.+)$/
+    const match = url.match(jsdelivrRegex)
+
+    if (match) {
+      const [, path] = match
+      return `${currentDomain}/cdn/${path}`
+    }
+
+    return ""
+  }
+
   const handleCnbConvert = () => {
     const converted = convertCnbUrl(cnbUrl)
     if (converted) {
@@ -108,6 +122,20 @@ export default function CdnAccelerator() {
     }
   }
 
+  const handleJsdelivrConvert = () => {
+    const converted = convertJsdelivrUrl(jsdelivrUrl)
+    if (converted) {
+      setConvertedJsdelivrUrl(converted)
+      copyToClipboard(converted)
+    } else {
+      toast({
+        title: "转换失败",
+        description: "请输入正确的jsdelivr链接格式",
+        variant: "destructive",
+      })
+    }
+  }
+
   const examples = [
     {
       title: "jQuery 示例",
@@ -129,6 +157,14 @@ export default function CdnAccelerator() {
       title: "GitHub 平台资源示例",
       original: "https://github.com/caddyserver/caddy/blob/master/cmd/cobra.go",
       accelerated: `${currentDomain}/cdn/gh/caddyserver/caddy@master/cmd/cobra.go`,
+    },
+  ]
+
+  const jsdelivrExamples = [
+    {
+      title: "jsdelivr CDN 示例",
+      original: "https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js",
+      accelerated: `${currentDomain}/cdn/npm/jquery@3.6.4/dist/jquery.min.js`,
     },
   ]
 
@@ -241,7 +277,36 @@ export default function CdnAccelerator() {
                     </div>
                   </div>
 
-                  {examples.map((example, index) => (
+                  <div className="space-y-2">
+                    <Label htmlFor="jsdelivr-url">jsdelivr 链接转换</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="jsdelivr-url"
+                        placeholder="https://cdn.jsdelivr.net/gh/jquery/jquery@3.6.4/dist/jquery.min.js"
+                        value={jsdelivrUrl}
+                        onChange={(e) => setJsdelivrUrl(e.target.value)}
+                        className="font-mono"
+                      />
+                      <Button onClick={handleJsdelivrConvert} disabled={!jsdelivrUrl}>
+                        转换并复制
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500">请输入完整的jsdelivr CDN链接</p>
+                  </div>
+
+                  {convertedJsdelivrUrl && (
+                    <div className="space-y-2">
+                      <Label>转换结果</Label>
+                      <div className="flex items-center gap-2">
+                        <Input value={convertedJsdelivrUrl} readOnly className="font-mono text-sm" />
+                        <Button onClick={() => copyToClipboard(convertedJsdelivrUrl)} size="sm" variant="outline">
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {jsdelivrExamples.map((example, index) => (
                     <div key={index} className="space-y-2">
                       <Label>{example.title}</Label>
                       <div className="space-y-2">
@@ -421,9 +486,7 @@ export default function CdnAccelerator() {
                     <Label>使用方法</Label>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-600 mb-2">使用格式：</p>
-                      <code className="text-sm bg-white px-2 py-1 rounded">
-                        {currentDomain}/cdn/要代理的完整网址
-                      </code>
+                      <code className="text-sm bg-white px-2 py-1 rounded">{currentDomain}/cdn/要代理的完整网址</code>
                     </div>
                   </div>
 
@@ -454,11 +517,7 @@ export default function CdnAccelerator() {
                     <div className="space-y-2">
                       <Label>生成的加速链接</Label>
                       <div className="flex items-center gap-2">
-                        <Input
-                          value={`${currentDomain}/cdn/${customUrl}`}
-                          readOnly
-                          className="font-mono text-sm"
-                        />
+                        <Input value={`${currentDomain}/cdn/${customUrl}`} readOnly className="font-mono text-sm" />
                         <Button
                           onClick={() => copyToClipboard(`${currentDomain}/cdn/${customUrl}`)}
                           size="sm"
