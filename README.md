@@ -13,7 +13,7 @@
 
 </div>
 
-> 本项目由 AI 生成，基于 Next.js + React + TypeScript 构建，集成多种实用开发者工具，��有功能均在本地浏览器端运行，保护您的隐私。
+> 本项目由 AI 生成，基于 Next.js + React + TypeScript 构建，集成多种实用开发者工具
 
 ---
 
@@ -43,7 +43,7 @@
 [![使用 EdgeOne Pages 部署到中国站点](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web)
 
 
-> 推荐使用 Tencent EdgeOne Pages 部署，IP信息查询依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能
+> 推荐使用 Tencent EdgeOne Pages 部署，可用区选择 不包含中国内地区域的全球区域，IP信息查询、镜像加速、AI聊天等功能依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能。Tencent EdgeOne Pages 目前是免费使用的。
 
 ### 部署到Vercel
 
@@ -54,18 +54,18 @@
 
 ### Docker部署
 
-\`\`\`
+```
 docker run -d -p 8080:8080 mrlee326/toolbox_web:latest
-\`\`\`
+```
 
 
 中国用户
 
 Chinese User
 
-\`\`\`
+```
 docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
-\`\`\`
+```
 
 ---
 
