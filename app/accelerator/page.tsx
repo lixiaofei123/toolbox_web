@@ -219,9 +219,9 @@ export default function CdnAccelerator() {
           <Tabs defaultValue="jsdelivr" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="jsdelivr">jsdelivr 加速</TabsTrigger>
-              <TabsTrigger value="github">GitHub 平台代理</TabsTrigger>
-              <TabsTrigger value="cnb">CNB 平台代理</TabsTrigger>
-              <TabsTrigger value="custom">自定义代理</TabsTrigger>
+              <TabsTrigger value="github">GitHub 加速</TabsTrigger>
+              <TabsTrigger value="cnb">CNB 加速</TabsTrigger>
+              <TabsTrigger value="custom">自定义加速</TabsTrigger>
             </TabsList>
 
             <TabsContent value="jsdelivr" className="space-y-4">
@@ -422,7 +422,7 @@ export default function CdnAccelerator() {
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-sm text-gray-600 mb-2">使用格式：</p>
                       <code className="text-sm bg-white px-2 py-1 rounded">
-                        {currentDomain}/cdn/proxy/要代理的完整网址
+                        {currentDomain}/cdn/要代理的完整网址
                       </code>
                     </div>
                   </div>
@@ -440,7 +440,7 @@ export default function CdnAccelerator() {
                       <Button
                         onClick={() => {
                           if (customUrl) {
-                            copyToClipboard(`${currentDomain}/cdn/proxy/${customUrl}`)
+                            copyToClipboard(`${currentDomain}/cdn/${customUrl}`)
                           }
                         }}
                         disabled={!customUrl}
@@ -455,12 +455,12 @@ export default function CdnAccelerator() {
                       <Label>生成的加速链接</Label>
                       <div className="flex items-center gap-2">
                         <Input
-                          value={`${currentDomain}/cdn/proxy/${customUrl}`}
+                          value={`${currentDomain}/cdn/${customUrl}`}
                           readOnly
                           className="font-mono text-sm"
                         />
                         <Button
-                          onClick={() => copyToClipboard(`${currentDomain}/cdn/proxy/${customUrl}`)}
+                          onClick={() => copyToClipboard(`${currentDomain}/cdn/${customUrl}`)}
                           size="sm"
                           variant="outline"
                         >
@@ -484,13 +484,13 @@ export default function CdnAccelerator() {
                   • <strong>jsdelivr 加速：</strong>适用于加速 npm 包和 GitHub 仓库资源
                 </p>
                 <p>
-                  • <strong>GitHub 平台代理：</strong>专门用于代理 GitHub 平台的代码仓库资源
+                  • <strong>GitHub 加速：</strong>专门用于加速 GitHub 平台的代码仓库资源
                 </p>
                 <p>
-                  • <strong>CNB 平台代理：</strong>专门用于代理腾讯 CNB 平台的代码仓库资源
+                  • <strong>CNB 加速：</strong>专门用于加速腾讯 CNB 平台的代码仓库资源
                 </p>
                 <p>
-                  • <strong>自定义代理：</strong>可以代理任意公开的网络资源
+                  • <strong>自定义加速：</strong>可以加速任意公开的网络资源
                 </p>
                 <p>• 所有代理服务都会自动缓存资源，提升后续访问速度</p>
               </CardContent>
