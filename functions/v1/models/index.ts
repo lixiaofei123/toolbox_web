@@ -2,7 +2,7 @@ export async function onRequest({ }) {
   const responseData = {
     "data": [
       {
-        "id": "hunyuan-a13b",
+        "id": "deepseek-r1-qwen-32b",
         "object": "model",
         "owned_by": ""
       }
