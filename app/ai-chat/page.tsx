@@ -157,6 +157,7 @@ export default function AIChatPage() {
   const sendMessage = async () => {
     if (!input.trim() || isLoading || !selectedModel) return
 
+    
     const userMessage: Message = {
       role: "user",
       content: input.trim(),
