@@ -17,6 +17,7 @@ main:
             auth_type: https
             username: ${GIT_USERNAME}
             password: ${GIT_ACCESS_TOKEN}
+            force: true
     - runner:
         tags: cnb:arch:amd64
       services:
