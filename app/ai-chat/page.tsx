@@ -231,20 +231,19 @@ export default function AIChatPage() {
               const parsed = JSON.parse(data)
               const content = parsed.choices?.[0]?.delta?.content
               const reasoning_content = parsed.choices?.[0]?.delta?.reasoning_content
-              if (content) {
+              if (content || reasoning_content) {
 
                 if(reasoning_content && reasoning_content_start === false){
                     assistantMessage.content += "<Thinking>"
                     reasoning_content_start = true
                 }
 
-                assistantMessage.content += content
+                assistantMessage.content += content || reasoning_content
 
                 if(reasoning_content_start === true && reasoning_content === undefined){
                   assistantMessage.content += "</Thinking><Answer>" 
                   reasoning_content_start = false
                 }
-
 
                 // 检测是否包含思考过程
                 if (assistantMessage.content.includes("<Thinking>")) {
