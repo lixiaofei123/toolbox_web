@@ -36,11 +36,11 @@
 
 #### 部署到国际站点
 
-[![使用 EdgeOne Pages 部署国际站点](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web)
+[![使用 EdgeOne Pages 部署国际站点](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web&build-command=npm%20run%20build&install-command=npm%20install&root-directory=%2F&output-directory=out)
 
 #### 部署到中国站点
 
-[![使用 EdgeOne Pages 部署到中国站点](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web)
+[![使用 EdgeOne Pages 部署到中国站点](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web&build-command=npm%20run%20build&install-command=npm%20install&root-directory=%2F&output-directory=out)
 
 
 > 推荐使用 Tencent EdgeOne Pages 部署，可用区选择 不包含中国内地区域的全球区域，IP信息查询、镜像加速、AI聊天等功能依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能。Tencent EdgeOne Pages 目前是免费使用的。
