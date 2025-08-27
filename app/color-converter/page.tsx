@@ -37,18 +37,40 @@ export default function ColorConverter() {
 
   // 颜色转换函数
   const hexToRgb = (hex: string) => {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-    return result
-      ? {
-          r: Number.parseInt(result[1], 16),
-          g: Number.parseInt(result[2], 16),
-          b: Number.parseInt(result[3], 16),
-        }
-      : null
+    // 支持 6 位和 8 位 hex 格式
+    const result6 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+    const result8 = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+
+    if (result8) {
+      // 8 位 hex 格式（带透明度）
+      return {
+        r: Number.parseInt(result8[1], 16),
+        g: Number.parseInt(result8[2], 16),
+        b: Number.parseInt(result8[3], 16),
+        alpha: Number.parseInt(result8[4], 16) / 255,
+      }
+    } else if (result6) {
+      // 6 位 hex 格式（不带透明度）
+      return {
+        r: Number.parseInt(result6[1], 16),
+        g: Number.parseInt(result6[2], 16),
+        b: Number.parseInt(result6[3], 16),
+        alpha: 1,
+      }
+    }
+    return null
   }
 
-  const rgbToHex = (r: number, g: number, b: number) => {
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+  const rgbToHex = (r: number, g: number, b: number, alpha?: number) => {
+    const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
+    if (alpha !== undefined && alpha < 1) {
+      // 生成 8 位 hex（带透明度）
+      const alphaHex = Math.round(alpha * 255)
+        .toString(16)
+        .padStart(2, "0")
+      return hex + alphaHex
+    }
+    return hex
   }
 
   const rgbToHsl = (r: number, g: number, b: number) => {
@@ -121,26 +143,31 @@ export default function ColorConverter() {
   }
 
   const updateFromHex = (hex: string, alpha: number = colorValues.alpha) => {
-    if (!/^#[0-9A-F]{6}$/i.test(hex)) {
-      setError("请输入有效的HEX颜色值 (如: #FF0000)")
+    if (!/^#[0-9A-F]{6}([0-9A-F]{2})?$/i.test(hex)) {
+      setError("请输入有效的HEX颜色值 (如: #FF0000 或 #FF0000FF)")
       return
     }
 
-    const rgb = hexToRgb(hex)
-    if (!rgb) {
+    const result = hexToRgb(hex)
+    if (!result) {
       setError("无效的HEX颜色值")
       return
     }
 
-    const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b)
-    setColorValues({ hex, rgb, hsl, alpha })
-    setInputRgb({ r: rgb.r.toString(), g: rgb.g.toString(), b: rgb.b.toString() })
+    const { r, g, b, alpha: hexAlpha } = result
+    const finalAlpha = hex.length === 9 ? hexAlpha : alpha // 8位hex使用提取的alpha，6位hex使用传入的alpha
+    const rgb = { r, g, b }
+    const hsl = rgbToHsl(r, g, b)
+    const finalHex = hex.length === 7 ? hex : hex.slice(0, 7) // 显示用的hex始终是6位
+
+    setColorValues({ hex: finalHex, rgb, hsl, alpha: finalAlpha })
+    setInputRgb({ r: r.toString(), g: g.toString(), b: b.toString() })
     setInputHsl({ h: hsl.h.toString(), s: hsl.s.toString(), l: hsl.l.toString() })
-    setInputAlpha(alpha.toString())
+    setInputAlpha(finalAlpha.toString())
     setError("")
 
     setColorHistory((prev) => {
-      const newHistory = [hex, ...prev.filter((c) => c !== hex)]
+      const newHistory = [finalHex, ...prev.filter((c) => c !== finalHex)]
       return newHistory.slice(0, 12)
     })
   }
@@ -151,7 +178,7 @@ export default function ColorConverter() {
       return
     }
 
-    const hex = rgbToHex(r, g, b)
+    const hex = rgbToHex(r, g, b) // 生成6位hex用于显示
     const hsl = rgbToHsl(r, g, b)
     const rgb = { r, g, b }
 
@@ -169,7 +196,7 @@ export default function ColorConverter() {
     }
 
     const rgb = hslToRgb(h, s, l)
-    const hex = rgbToHex(rgb.r, rgb.g, rgb.b)
+    const hex = rgbToHex(rgb.r, rgb.g, rgb.b) // 生成6位hex用于显示
     const hsl = { h, s, l }
 
     setColorValues({ hex, rgb, hsl, alpha })
@@ -351,6 +378,37 @@ export default function ColorConverter() {
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
+                      <Label className="text-sm font-medium">HEX (带透明度)</Label>
+                      <p className="font-mono text-lg">
+                        {rgbToHex(
+                          colorValues.rgb.r,
+                          colorValues.rgb.g,
+                          colorValues.rgb.b,
+                          colorValues.alpha,
+                        ).toUpperCase()}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        copyToClipboard(
+                          rgbToHex(
+                            colorValues.rgb.r,
+                            colorValues.rgb.g,
+                            colorValues.rgb.b,
+                            colorValues.alpha,
+                          ).toUpperCase(),
+                          "HEX (带透明度)",
+                        )
+                      }
+                    >
+                      {copied === "HEX (带透明度)" ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
                       <Label className="text-sm font-medium">RGB</Label>
                       <p className="font-mono text-lg">
                         rgb({colorValues.rgb.r}, {colorValues.rgb.g}, {colorValues.rgb.b})
@@ -501,18 +559,21 @@ export default function ColorConverter() {
               <CardContent className="space-y-6">
                 {/* HEX输入 */}
                 <div className="space-y-2">
-                  <Label htmlFor="hex-input">HEX 颜色值</Label>
+                  <Label htmlFor="hex-input">HEX 颜色值 (支持 6 位和 8 位格式)</Label>
                   <div className="flex gap-2">
                     <Input
                       id="hex-input"
                       type="text"
-                      placeholder="#FF0000"
+                      placeholder="#FF0000 或 #FF0000FF"
                       value={inputHex}
                       onChange={(e) => setInputHex(e.target.value)}
                       className="font-mono"
                     />
                     <Button onClick={() => updateFromHex(inputHex)}>转换</Button>
                   </div>
+                  <p className="text-xs text-gray-500">
+                    支持 6 位格式 (#RRGGBB) 和 8 位格式 (#RRGGBBAA，最后两位为透明度)
+                  </p>
                 </div>
 
                 {/* 透明度控制 */}
