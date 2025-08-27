@@ -15,6 +15,7 @@ interface ColorValues {
   hex: string
   rgb: { r: number; g: number; b: number }
   hsl: { h: number; s: number; l: number }
+  alpha: number
 }
 
 export default function ColorConverter() {
@@ -22,10 +23,12 @@ export default function ColorConverter() {
     hex: "#3b82f6",
     rgb: { r: 59, g: 130, b: 246 },
     hsl: { h: 217, s: 91, l: 60 },
+    alpha: 1,
   })
   const [inputHex, setInputHex] = useState("#3b82f6")
   const [inputRgb, setInputRgb] = useState({ r: "59", g: "130", b: "246" })
   const [inputHsl, setInputHsl] = useState({ h: "217", s: "91", l: "60" })
+  const [inputAlpha, setInputAlpha] = useState("1")
   const [error, setError] = useState("")
   const [copied, setCopied] = useState("")
   const { toast } = useToast()
@@ -117,7 +120,7 @@ export default function ColorConverter() {
     }
   }
 
-  const updateFromHex = (hex: string) => {
+  const updateFromHex = (hex: string, alpha: number = colorValues.alpha) => {
     if (!/^#[0-9A-F]{6}$/i.test(hex)) {
       setError("请输入有效的HEX颜色值 (如: #FF0000)")
       return
@@ -130,19 +133,19 @@ export default function ColorConverter() {
     }
 
     const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b)
-    setColorValues({ hex, rgb, hsl })
+    setColorValues({ hex, rgb, hsl, alpha })
     setInputRgb({ r: rgb.r.toString(), g: rgb.g.toString(), b: rgb.b.toString() })
     setInputHsl({ h: hsl.h.toString(), s: hsl.s.toString(), l: hsl.l.toString() })
+    setInputAlpha(alpha.toString())
     setError("")
 
-    // 添加到历史记录
     setColorHistory((prev) => {
       const newHistory = [hex, ...prev.filter((c) => c !== hex)]
-      return newHistory.slice(0, 12) // 保留最近12个颜色
+      return newHistory.slice(0, 12)
     })
   }
 
-  const updateFromRgb = (r: number, g: number, b: number) => {
+  const updateFromRgb = (r: number, g: number, b: number, alpha: number = colorValues.alpha) => {
     if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
       setError("RGB值必须在0-255之间")
       return
@@ -152,13 +155,14 @@ export default function ColorConverter() {
     const hsl = rgbToHsl(r, g, b)
     const rgb = { r, g, b }
 
-    setColorValues({ hex, rgb, hsl })
+    setColorValues({ hex, rgb, hsl, alpha })
     setInputHex(hex)
     setInputHsl({ h: hsl.h.toString(), s: hsl.s.toString(), l: hsl.l.toString() })
+    setInputAlpha(alpha.toString())
     setError("")
   }
 
-  const updateFromHsl = (h: number, s: number, l: number) => {
+  const updateFromHsl = (h: number, s: number, l: number, alpha: number = colorValues.alpha) => {
     if (h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100) {
       setError("HSL值范围: H(0-360), S(0-100), L(0-100)")
       return
@@ -168,9 +172,21 @@ export default function ColorConverter() {
     const hex = rgbToHex(rgb.r, rgb.g, rgb.b)
     const hsl = { h, s, l }
 
-    setColorValues({ hex, rgb, hsl })
+    setColorValues({ hex, rgb, hsl, alpha })
     setInputHex(hex)
     setInputRgb({ r: rgb.r.toString(), g: rgb.g.toString(), b: rgb.b.toString() })
+    setInputAlpha(alpha.toString())
+    setError("")
+  }
+
+  const updateAlpha = (alpha: number) => {
+    if (alpha < 0 || alpha > 1) {
+      setError("透明度值必须在0-1之间")
+      return
+    }
+
+    setColorValues({ ...colorValues, alpha })
+    setInputAlpha(alpha.toString())
     setError("")
   }
 
@@ -205,7 +221,6 @@ export default function ColorConverter() {
   const generateColorPalette = () => {
     const colors = []
 
-    // 生成HSL色盘
     for (let h = 0; h < 360; h += 30) {
       for (let s = 50; s <= 100; s += 50) {
         for (let l = 30; l <= 70; l += 20) {
@@ -216,12 +231,11 @@ export default function ColorConverter() {
       }
     }
 
-    // 添加灰度色
     for (let i = 0; i <= 255; i += 32) {
       colors.push(rgbToHex(i, i, i))
     }
 
-    return colors.slice(0, 64) // 限制为64个颜色
+    return colors.slice(0, 64)
   }
 
   const calculateContrast = (color1: string, color2: string) => {
@@ -247,7 +261,6 @@ export default function ColorConverter() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-100">
-      {/* Header */}
       <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -273,7 +286,7 @@ export default function ColorConverter() {
       <div className="p-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
-            <p className="text-gray-600">HEX、RGB、HSL颜色格式互转</p>
+            <p className="text-gray-600">HEX、RGB、HSL、RGBA、HSLA颜色格式互转，支持透明度</p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6">
@@ -288,12 +301,28 @@ export default function ColorConverter() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="relative">
-                  <div
-                    className="w-full h-32 rounded-lg border-2 border-gray-200 shadow-inner cursor-pointer hover:border-gray-300 transition-colors"
-                    style={{ backgroundColor: colorValues.hex }}
-                    title="点击选择颜色"
-                  />
-                  {/* 隐藏的系统颜色选择器 */}
+                  <div className="w-full h-32 rounded-lg border-2 border-gray-200 shadow-inner relative overflow-hidden">
+                    <div
+                      className="absolute inset-0 opacity-20"
+                      style={{
+                        backgroundImage: `
+                          linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                          linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                          linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                          linear-gradient(-45deg, transparent 75%, #ccc 75%)
+                        `,
+                        backgroundSize: "20px 20px",
+                        backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
+                      }}
+                    />
+                    <div
+                      className="absolute inset-0 cursor-pointer hover:opacity-90 transition-opacity"
+                      style={{
+                        backgroundColor: `rgba(${colorValues.rgb.r}, ${colorValues.rgb.g}, ${colorValues.rgb.b}, ${colorValues.alpha})`,
+                      }}
+                      title="点击选择颜色"
+                    />
+                  </div>
                   <input
                     type="color"
                     value={colorValues.hex}
@@ -340,6 +369,27 @@ export default function ColorConverter() {
 
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div>
+                      <Label className="text-sm font-medium">RGBA</Label>
+                      <p className="font-mono text-lg">
+                        rgba({colorValues.rgb.r}, {colorValues.rgb.g}, {colorValues.rgb.b}, {colorValues.alpha})
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        copyToClipboard(
+                          `rgba(${colorValues.rgb.r}, ${colorValues.rgb.g}, ${colorValues.rgb.b}, ${colorValues.alpha})`,
+                          "RGBA",
+                        )
+                      }
+                    >
+                      {copied === "RGBA" ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
                       <Label className="text-sm font-medium">HSL</Label>
                       <p className="font-mono text-lg">
                         hsl({colorValues.hsl.h}, {colorValues.hsl.s}%, {colorValues.hsl.l}%)
@@ -358,9 +408,29 @@ export default function ColorConverter() {
                       {copied === "HSL" ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                     </Button>
                   </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">HSLA</Label>
+                      <p className="font-mono text-lg">
+                        hsla({colorValues.hsl.h}, {colorValues.hsl.s}%, {colorValues.hsl.l}%, {colorValues.alpha})
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        copyToClipboard(
+                          `hsla(${colorValues.hsl.h}, ${colorValues.hsl.s}%, ${colorValues.hsl.l}%, ${colorValues.alpha})`,
+                          "HSLA",
+                        )
+                      }
+                    >
+                      {copied === "HSLA" ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                  </div>
                 </div>
 
-                {/* 颜色对比度检查 */}
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">颜色对比度检查</Label>
                   <div className="grid grid-cols-2 gap-4">
@@ -445,32 +515,56 @@ export default function ColorConverter() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>快捷选择</Label>
-                  <div className="grid grid-cols-6 gap-2">
-                    {[
-                      { name: "红色", hex: "#FF0000" },
-                      { name: "绿色", hex: "#00FF00" },
-                      { name: "蓝色", hex: "#0000FF" },
-                      { name: "黄色", hex: "#FFFF00" },
-                      { name: "紫色", hex: "#800080" },
-                      { name: "橙色", hex: "#FFA500" },
-                    ].map((color) => (
-                      <Button
-                        key={color.hex}
-                        variant="outline"
-                        size="sm"
-                        className="h-8 p-1 bg-transparent"
-                        style={{ backgroundColor: color.hex, color: "white" }}
-                        onClick={() => {
-                          updateFromHex(color.hex)
-                          setInputHex(color.hex)
-                        }}
-                        title={color.name}
-                      >
-                        {color.name}
-                      </Button>
-                    ))}
+                {/* 透明度控制 */}
+                <div className="space-y-4">
+                  <Label>透明度 (Alpha)</Label>
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="alpha-slider" className="text-sm flex justify-between">
+                        <span>透明度</span>
+                        <span className="font-mono">{Math.round(colorValues.alpha * 100)}%</span>
+                      </Label>
+                      <div className="relative mt-2">
+                        <div
+                          className="h-4 rounded mb-2 border"
+                          style={{
+                            background: `linear-gradient(to right, 
+                              rgba(${colorValues.rgb.r}, ${colorValues.rgb.g}, ${colorValues.rgb.b}, 0) 0%, 
+                              rgba(${colorValues.rgb.r}, ${colorValues.rgb.g}, ${colorValues.rgb.b}, 1) 100%
+                            ), 
+                            linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                            linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                            linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                            linear-gradient(-45deg, transparent 75%, #ccc 75%)`,
+                            backgroundSize: "cover, 10px 10px, 10px 10px, 10px 10px, 10px 10px",
+                            backgroundPosition: "0 0, 0 0, 0 5px, 5px -5px, -5px 0px",
+                          }}
+                        />
+                        <Slider
+                          id="alpha-slider"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={[colorValues.alpha]}
+                          onValueChange={(value) => {
+                            updateAlpha(value[0])
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value={inputAlpha}
+                        onChange={(e) => setInputAlpha(e.target.value)}
+                        placeholder="0.0 - 1.0"
+                        className="font-mono"
+                      />
+                      <Button onClick={() => updateAlpha(Number.parseFloat(inputAlpha) || 0)}>设置</Button>
+                    </div>
                   </div>
                 </div>
 
