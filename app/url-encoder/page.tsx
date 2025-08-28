@@ -39,7 +39,7 @@ export default function UrlEncoder() {
       // 对每个参数值进行编码
       for (const [key, value] of searchParams.entries()) {
         if (value) {
-          searchParams.set(key, encodeURIComponent(value))
+          searchParams.set(key, value)
         }
       }
       
