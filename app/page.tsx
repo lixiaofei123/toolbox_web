@@ -218,7 +218,7 @@ export default function Home() {
             <p className="text-gray-600 max-w-2xl mx-auto">
               免费、快速、易用的在线工具集合，无需安装，即开即用，提高您的工作效率
             </p>
-            <div className="mt-2 text-sm text-gray-500">由 V0.dev 自动生成</div>
+            <div className="mt-2 text-sm text-gray-500">由 v0.dev 自动生成</div>
           </header>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
