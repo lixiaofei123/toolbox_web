@@ -30,25 +30,22 @@ export default function UrlEncoder() {
     }
   }
 
-  // 智能编码URL参数部分
+
+
   const encodeUrlParams = (urlString: string): string => {
     try {
-      const url = new URL(urlString)
-      const searchParams = new URLSearchParams(url.search)
-      
-      // 对每个参数值进行编码
-      for (const [key, value] of searchParams.entries()) {
-        if (value) {
-          searchParams.set(key, value)
+        const url = new URL(urlString);
+
+        const parts: string[] = [];
+        for (const [key, value] of url.searchParams.entries()) {
+          parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
         }
+
+        url.search = parts.join("&");
+        return url.toString();
+      } catch (err) {
+          throw new Error("URL参数编码失败");
       }
-      
-      // 重新构建URL
-      url.search = searchParams.toString()
-      return url.toString()
-    } catch (err) {
-      throw new Error("URL参数编码失败")
-    }
   }
 
   // 编码整个URL
