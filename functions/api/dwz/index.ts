@@ -54,7 +54,7 @@ export async function onRequestDelete({ request, params, env }) {
     const password = body.password
     const key = body.key
     if (env.password) {
-        if (password !== password) {
+        if (env.password !== password) {
             return new Response(JSON.stringify({ data: '密码错误' }), {
                 status: 401,
                 headers: {
