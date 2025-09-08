@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Switch } from "@/components/ui/switch"
-import { Copy, Link2, Trash2, CheckCircle, ArrowLeft, Home, Plus, ExternalLink, Sparkles, Shield } from "lucide-react"
+import { Copy, Link2, Trash2, CheckCircle, ArrowLeft, Home, Plus, ExternalLink, Sparkles, Shield, Eye, EyeOff } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function UrlShortener() {
@@ -26,7 +26,42 @@ export default function UrlShortener() {
   const [deleteShortUrl, setDeleteShortUrl] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // 密码显示/隐藏状态
+  const [showPassword, setShowPassword] = useState(false)
+  const [showDeletePassword, setShowDeletePassword] = useState(false)
+
   const { toast } = useToast()
+
+  // localStorage 相关函数
+  const savePasswordToStorage = (password: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("dwz_password", password)
+    }
+  }
+
+  const loadPasswordFromStorage = () => {
+    if (typeof window !== "undefined") {
+      const savedPassword = localStorage.getItem("dwz_password")
+      if (savedPassword) {
+        setPassword(savedPassword)
+        setDeletePassword(savedPassword)
+      }
+    }
+  }
+
+  // 同步密码到另一个输入框
+  const syncPassword = (newPassword: string, isDeletePassword: boolean) => {
+    if (isDeletePassword) {
+      setPassword(newPassword)
+    } else {
+      setDeletePassword(newPassword)
+    }
+  }
+
+  // 页面加载时从localStorage读取密码
+  useEffect(() => {
+    loadPasswordFromStorage()
+  }, [])
 
   // 获取当前域名
   const getBasePath = () => {
@@ -102,6 +137,9 @@ export default function UrlShortener() {
       const result = await response.json()
       const generatedShortUrl = `${basePath}/d/${result.data}`
       setShortUrl(generatedShortUrl)
+
+      // 保存密码到localStorage
+      savePasswordToStorage(password)
 
       toast({
         title: "生成成功",
@@ -297,14 +335,32 @@ export default function UrlShortener() {
                         <Shield className="w-4 h-4 text-violet-500" />
                         API 验证密码
                       </Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="用于后台API验证的密码"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="border-violet-200 focus:border-violet-400 focus:ring-violet-400"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="用于后台API验证的密码"
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value)
+                            syncPassword(e.target.value, false)
+                          }}
+                          className="border-violet-200 focus:border-violet-400 focus:ring-violet-400 pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
                       <p className="text-xs text-gray-500">此密码用于API调用时的后台验证，不是访问密码</p>
                     </div>
                     <div className="flex items-center space-x-3 p-4 bg-violet-50 rounded-lg border border-violet-200">
@@ -454,14 +510,32 @@ export default function UrlShortener() {
                         <Shield className="w-4 h-4 text-red-500" />
                         API 验证密码
                       </Label>
-                      <Input
-                        id="delete-password"
-                        type="password"
-                        placeholder="输入创建时设置的API验证密码"
-                        value={deletePassword}
-                        onChange={(e) => setDeletePassword(e.target.value)}
-                        className="border-red-200 focus:border-red-400 focus:ring-red-400"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="delete-password"
+                          type={showDeletePassword ? "text" : "password"}
+                          placeholder="输入创建时设置的API验证密码"
+                          value={deletePassword}
+                          onChange={(e) => {
+                            setDeletePassword(e.target.value)
+                            syncPassword(e.target.value, true)
+                          }}
+                          className="border-red-200 focus:border-red-400 focus:ring-red-400 pr-10"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowDeletePassword(!showDeletePassword)}
+                        >
+                          {showDeletePassword ? (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-gray-400" />
+                          )}
+                        </Button>
+                      </div>
                       <p className="text-xs text-gray-500">此密码用于API调用时的后台验证</p>
                     </div>
                     <div className="space-y-2">
