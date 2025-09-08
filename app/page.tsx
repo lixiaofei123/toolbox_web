@@ -26,6 +26,7 @@ import {
   Package,
   Bot,
   Zap,
+  Link2,
 } from "lucide-react"
 
 export default function Home() {
@@ -205,6 +206,13 @@ export default function Home() {
       href: "/accelerator",
       icon: <Zap className="w-4 h-4" />,
       color: "bg-yellow-100 text-yellow-600",
+    },
+    {
+      name: "短网址生成",
+      description: "生成和管理短网址，支持密码保护和中间页设置",
+      href: "/url-shortener",
+      icon: <Link2 className="w-4 h-4" />,
+      color: "bg-indigo-100 text-indigo-600",
     },
   ]
 
