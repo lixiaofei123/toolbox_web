@@ -23,7 +23,7 @@ export default function UrlShortener() {
 
   // 删除短网址相关状态
   const [deletePassword, setDeletePassword] = useState("")
-  const [deleteKey, setDeleteKey] = useState("")
+  const [deleteShortUrl, setDeleteShortUrl] = useState("")
   const [isDeleting, setIsDeleting] = useState(false)
 
   const { toast } = useToast()
@@ -34,6 +34,24 @@ export default function UrlShortener() {
       return window.location.origin
     }
     return ""
+  }
+
+  // 从完整短网址中提取标识
+  const extractKeyFromShortUrl = (shortUrl: string): string | null => {
+    try {
+      const url = new URL(shortUrl)
+      const pathname = url.pathname
+      
+      // 匹配 /d/ 后面的标识部分
+      const match = pathname.match(/^\/d\/([a-zA-Z0-9]+)$/)
+      if (match && match[1]) {
+        return match[1]
+      }
+      
+      return null
+    } catch {
+      return null
+    }
   }
 
   // 生成短网址
@@ -100,7 +118,7 @@ export default function UrlShortener() {
   }
 
   // 删除短网址
-  const deleteShortUrl = async () => {
+  const handleDeleteShortUrl = async () => {
     setError("")
     setIsDeleting(true)
 
@@ -110,8 +128,16 @@ export default function UrlShortener() {
       return
     }
 
-    if (!deleteKey.trim()) {
-      setError("请输入短网址标识")
+    if (!deleteShortUrl.trim()) {
+      setError("请输入完整短网址")
+      setIsDeleting(false)
+      return
+    }
+
+    // 从完整短网址中提取标识
+    const key = extractKeyFromShortUrl(deleteShortUrl)
+    if (!key) {
+      setError("无效的短网址格式，请确保输入完整的短网址")
       setIsDeleting(false)
       return
     }
@@ -125,7 +151,7 @@ export default function UrlShortener() {
         },
         body: JSON.stringify({
           password: deletePassword,
-          key: deleteKey,
+          key: key,
         }),
       })
 
@@ -140,7 +166,7 @@ export default function UrlShortener() {
 
       // 清空表单
       setDeletePassword("")
-      setDeleteKey("")
+      setDeleteShortUrl("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "删除短网址失败")
     } finally {
@@ -417,7 +443,7 @@ export default function UrlShortener() {
                       </div>
                       删除短网址
                     </CardTitle>
-                    <CardDescription className="text-gray-600">输入API验证密码和短网址标识来删除短网址</CardDescription>
+                    <CardDescription className="text-gray-600">输入API验证密码和完整短网址来删除短网址</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
@@ -439,20 +465,21 @@ export default function UrlShortener() {
                       <p className="text-xs text-gray-500">此密码用于API调用时的后台验证</p>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="delete-key" className="text-sm font-medium text-gray-700">
-                        短网址标识
+                      <Label htmlFor="delete-short-url" className="text-sm font-medium text-gray-700">
+                        完整短网址
                       </Label>
                       <Input
-                        id="delete-key"
-                        placeholder="例如：4UuEh6Uf"
-                        value={deleteKey}
-                        onChange={(e) => setDeleteKey(e.target.value)}
-                        className="border-red-200 focus:border-red-400 focus:ring-red-400 font-mono"
+                        id="delete-short-url"
+                        type="url"
+                        placeholder="例如：https://example.com/d/4UuEh6Uf"
+                        value={deleteShortUrl}
+                        onChange={(e) => setDeleteShortUrl(e.target.value)}
+                        className="border-red-200 focus:border-red-400 focus:ring-red-400"
                       />
-                      <p className="text-xs text-gray-500">短网址标识是短网址中 /d/ 后面的部分</p>
+                      <p className="text-xs text-gray-500">输入完整的短网址，系统会自动提取标识</p>
                     </div>
                     <Button
-                      onClick={deleteShortUrl}
+                      onClick={handleDeleteShortUrl}
                       className="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 shadow-lg"
                       disabled={isDeleting}
                     >
