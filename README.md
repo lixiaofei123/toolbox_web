@@ -21,6 +21,9 @@
 
 这是一个功能丰富的在线工具箱，专为开发者和日常用户设计。所有工具都在本地浏览器中运行，无需上传数据到服务器，确保您的隐私和数据安全。项目采用现代化的技术栈，提供流畅的用户体验和响应式设计。
 
+目前工具箱支持的工具有：Base64 转换器、图片转换器、图片编辑器、二维码工具、密码生成器、时间戳转换、URL 编解码、颜色转换器、JSON 格式化、JWT 解析器、哈希值生成、UUID 生成器、Cron 表达式、正则表达式、文本差异比较、文本搜索替换、颜色取色器、浏览器信息、JSON/YAML转换、IP信息查询、抽奖程序、DNS 查询工具、GOPROXY 代理、AI 聊天助手、静态资源加速、短网址生成 
+
+
 ---
 
 ## 首页预览
@@ -43,7 +46,12 @@
 [![使用 EdgeOne Pages 部署到中国站点](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Flixiaofei123%2Ftoolbox_web&build-command=npm%20run%20build&install-command=npm%20install&root-directory=%2F&output-directory=out)
 
 
-> 推荐使用 Tencent EdgeOne Pages 部署，可用区选择 不包含中国内地区域的全球区域，IP信息查询、镜像加速、AI聊天等功能依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能。Tencent EdgeOne Pages 目前是免费使用的。
+> 推荐使用 Tencent EdgeOne Pages 部署，可用区选择 不包含中国内地区域的全球区域，IP信息查询、镜像加速、AI聊天、短网址等功能依赖EdgeOne的边缘函数功能，使用其它方式部署不支持功能。Tencent EdgeOne Pages 目前是免费使用的。
+
+短网址功能使用说明
+
+1. 如果需要设置密码来保护短网址功能不被滥用，需要在部署的时候设置环境变量 password
+2. 需要在腾讯云EdgeOne上开通KV使用权限，然后创建一个名为dwz的命名空间，将其绑定到page项目上，绑定时设置的变量为dwz
 
 ### 部署到Vercel
 
@@ -54,18 +62,18 @@
 
 ### Docker部署
 
-\`\`\`
+```
 docker run -d -p 8080:8080 mrlee326/toolbox_web:latest
-\`\`\`
+```
 
 
 中国用户
 
 Chinese User
 
-\`\`\`
+```
 docker run -d -p 8080:8080 docker.cnb.cool/xiaofei/toolbox_web:latest
-\`\`\`
+```
 
 ---
 
