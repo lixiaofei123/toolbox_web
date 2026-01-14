@@ -5,6 +5,10 @@ export async function onRequest({ }) {
         "id": "hunyuan-t1-20250822",
         "object": "model",
         "owned_by": ""
+      },{
+        "id": "hunyuan-a13b",
+        "object": "model",
+        "owned_by": ""
       }
     ],
     "object": "list"
