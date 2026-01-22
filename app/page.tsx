@@ -280,7 +280,7 @@ export default function Home() {
                   className="flex items-center gap-1 hover:text-gray-900 transition-colors"
                 >
                   <img
-                    src="https://docs.cnb.cool/images/logo/svg/LogoMonochromeIcon.svg"
+                    src="https://docs.cnb.cool/images/logo/320/Symbol-Color.png"
                     className="w-4 h-4"
                     alt="CNB"
                   />
